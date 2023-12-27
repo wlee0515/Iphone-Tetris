@@ -16,7 +16,6 @@
   <style>
     body {
       overflow: hidden;
-      background: #d7d7d7;
       margin: 0;
       padding: 0;
       width: 100vw;
@@ -26,7 +25,7 @@
       background-position: center;  
       background-repeat: no-repeat; 
       background-size: cover; 
-      background-color: blue; /*this is the color of the navbar*/
+      background-color: black; /*this is the color of the navbar*/
  
       -webkit-touch-callout: none;
       -webkit-user-select: none;
@@ -69,6 +68,23 @@
       "rgba(255,255,0,1)",
     ];
 
+    var blockShape = [
+      [],
+      [[0,0],[0,1],[1,0],[1,1]],
+      [[0,0],[0,1],[-1,0],[1,0]],
+      [[0,0],[0,1],[1,1],[-1,0]],
+      [[0,0],[0,1],[-1,1],[1,0]],
+      [[0,0],[-1,1],[-1,0],[1,0]],
+      [[0,0],[1,1],[1,0],[-1,0]],
+      [[0,0],[0,1],[0,2],[0,-1]],
+    ]
+
+    var gActiveBlock = {
+      blockIndex : 2,
+      blockShape : blockShape[2],
+      blockCenter : [0,0]      
+    }
+
     var gBoard = {
       x : 0,
       y : 0,
@@ -78,6 +94,17 @@
       backgroundColor : "rgba(255,255,255,0.80)",
       borderColor : "black",
     };
+
+    var rotateRight = [[0,-1],[1,0]];
+    var rotateLeft = [[0,1],[-1,0]];
+
+    function rotateArray( iRotation, iArray ) {
+      var ret = [];
+      for( var i = 0; i < iArray.length; ++i) {
+        ret.push([iRotation[0][1]*iArray[0] + iRotation[0][1]*iArray[1], iRotation[1][1]*iArray[0] + iRotation[1][1]*iArray[1] ]);
+      }
+      return ret;
+    }
 
     function render() {
 
@@ -116,19 +143,33 @@
       
       wCtx.strokeStyle = "dark grey";
       wCtx.lineWidth = 2;
-      var wAnchorX = wBoardCorners[0][0] + wCenterX;
-      var wAnchorY = wBoardCorners[0][1] + wCenterY;
+      var wAnchorX = wBoardCorners[1][0] + wCenterX;
+      var wAnchorY = wBoardCorners[1][1] + wCenterY - wBlockSize;
       var wBlockRadius = wBlockSize/5;
       for( var i = 0; i < gBoard.data.length; ++i) {
         for( var k = 0; k < gBoard.data[i].length; ++k) {
           if (0 == gBoard.data[i][k]) continue;
           wCtx.fillStyle = blockColor[gBoard.data[i][k]];
           wCtx.beginPath();
-          wCtx.roundRect(wAnchorX + k*wBlockSize, wAnchorY + i*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
+          wCtx.roundRect(wAnchorX + k*wBlockSize, wAnchorY - i*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
           wCtx.fill();
           wCtx.stroke();
         }
       }
+
+      wCtx.fillStyle = blockColor[gActiveBlock.blockIndex];
+      for( var i = 0; i < gActiveBlock.blockShape.length; ++i) {
+        var x = gActiveBlock.blockShape[i][0];
+        var y = gActiveBlock.blockShape[i][1];
+        
+        wCtx.beginPath();
+        wCtx.roundRect(wAnchorX + x*wBlockSize, wAnchorY - y*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
+        wCtx.fill();
+        wCtx.stroke();
+
+      }
+
+      gActiveBlock
       window.requestAnimationFrame(render);
     }
 
