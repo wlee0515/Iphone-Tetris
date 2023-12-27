@@ -17,6 +17,11 @@
       padding: 0;
       width: 100vw;
       height: 100vh;
+      background-image: url("startup.png"); 
+    
+  background-position: center;  
+  background-repeat: no-repeat; 
+  background-size: cover; 
     }
 
     #tetris {
@@ -32,25 +37,113 @@
     }
 
     #viewport {
-      border: 1px solid blue;
     }
 
   </style>
   <script>
 
+    var gGlobal = {
+      viewportId : "viewport"
+    };
+
+    var blockColor  = [
+      "rgba(255,255,255,0.0)",
+      "rgba(255,0,0,1)",
+      "rgba(0,255,0,1)",
+      "rgba(0,0,255,1)",
+      "rgba(255,255,0,1)",
+      "rgba(255,0,255,1)",
+      "rgba(0,255,255,1)",
+      "rgba(255,255,0,1)",
+    ];
+
+    var gBoard = {
+      x : 0,
+      y : 0,
+      height : 25,
+      width : 10,
+      data : [],
+      backgroundColor : "rgba(255,255,255,0.80)",
+      borderColor : "black",
+    };
+
+    function render() {
+
+      var wCanvas = document.getElementById(gGlobal.viewportId);
+      var wCtx = wCanvas.getContext("2d");
+      
+      if (null == wCtx) return;
+
+      wCtx.clearRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight );
+      var wCenterX = wCanvas.clientWidth/2;
+      var wCenterY = wCanvas.clientHeight/2;
+      var wBlockSizeW = Math.floor( wCanvas.clientWidth/(gBoard.width + 5));
+      var wBlockSizeH = Math.floor( wCanvas.clientHeight/(gBoard.height + 5));
+      var wBlockSize = wBlockSizeW < wBlockSizeH ? wBlockSizeW : wBlockSizeH;
+
+      var wBoardWidth = gBoard.width*wBlockSize;
+      var wBoardHeight = gBoard.height*wBlockSize;
+
+      var wBoardCorners = [
+        [gBoard.x - wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
+        [gBoard.x - wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
+        [gBoard.x + wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
+        [gBoard.x + wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
+      ];
+
+      wCtx.fillStyle = gBoard.backgroundColor;
+      wCtx.fillRect(wBoardCorners[0][0] + wCenterX, wBoardCorners[0][1] + wCenterY, wBoardWidth, wBoardHeight);
+      wCtx.moveTo( wBoardCorners[0][0] + wCenterX, wBoardCorners[0][1] + wCenterY);
+
+      for( var i = 1; i < wBoardCorners.length; ++i) {
+        wCtx.lineTo(wBoardCorners[i][0] + wCenterX, wBoardCorners[i][1] + wCenterY);
+      }
+      wCtx.strokeStyle = gBoard.borderColor;
+      wCtx.lineWidth = 3;
+      wCtx.stroke();
+      
+      wCtx.strokeStyle = "dark grey";
+      wCtx.lineWidth = 2;
+      var wAnchorX = wBoardCorners[0][0] + wCenterX;
+      var wAnchorY = wBoardCorners[0][1] + wCenterY;
+      var wBlockRadius = wBlockSize/5;
+      for( var i = 0; i < gBoard.data.length; ++i) {
+        for( var k = 0; k < gBoard.data[i].length; ++k) {
+          if (0 == gBoard.data[i][k]) continue;
+          wCtx.fillStyle = blockColor[gBoard.data[i][k]];
+          wCtx.beginPath();
+          wCtx.roundRect(wAnchorX + k*wBlockSize, wAnchorY + i*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
+          wCtx.fill();
+          wCtx.stroke();
+        }
+      }
+      window.requestAnimationFrame(render);
+    }
+
     function resize() {
-      var wCanvas = document.getElementById("viewport");
+      var wCanvas = document.getElementById(gGlobal.viewportId);
       if (null != wCanvas) {
         wCanvas.height = wCanvas.parentElement.clientHeight;
         wCanvas.width = wCanvas.parentElement.clientWidth;
       }
     }
+
     function init() {
       resize();
+      gBoard.data = [];
+      for (var i = 0; i < gBoard.height; ++i) {
+        var newRow = new Int16Array(gBoard.width);
+        for (var k = 0; k < newRow.length; ++k) {
+          newRow[k] = Math.floor(Math.random()*blockColor.length)//0;
+        }
+        gBoard.data.push(newRow);
+      }
+      
+      window.requestAnimationFrame(render);
     }
 
-    window.addEventListener("load", init)
-    window.addEventListener("resize", resize)
+    window.addEventListener("load", init);
+    window.addEventListener("resize", resize);
   </script>
 </head>
 <body>
