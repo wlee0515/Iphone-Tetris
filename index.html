@@ -107,7 +107,8 @@
     }
 
     function render() {
-
+      resize();
+        
       var wCanvas = document.getElementById(gGlobal.viewportId);
       var wCtx = wCanvas.getContext("2d");
       
@@ -169,7 +170,6 @@
 
       }
 
-      gActiveBlock
       window.requestAnimationFrame(render);
     }
 
@@ -199,9 +199,17 @@
       
       window.requestAnimationFrame(render);
     }
-
+    
     window.addEventListener("load", init);
     window.addEventListener("resize", resize);
+    document.addEventListener('keydown', function(event) {
+    if(event.keyCode == 37) {
+        alert('Left was pressed');
+    }
+    else if(event.keyCode == 39) {
+        alert('Right was pressed');
+    }
+});
   </script>
 </head>
 <body>
