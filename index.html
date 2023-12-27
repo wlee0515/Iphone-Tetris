@@ -26,6 +26,7 @@
       background-position: center;  
       background-repeat: no-repeat; 
       background-size: cover; 
+      background-color: blue; /*this is the color of the navbar*/
  
       -webkit-touch-callout: none;
       -webkit-user-select: none;
@@ -132,6 +133,11 @@
     }
 
     function resize() {
+      
+      //adjust for bottom navbar on phone
+      document.body.height = window.innerHeight;
+      document.body.width = window.innerWidth;
+
       var wCanvas = document.getElementById(gGlobal.viewportId);
       if (null != wCanvas) {
         wCanvas.height = wCanvas.parentElement.clientHeight;
