@@ -80,8 +80,8 @@
     ]
 
     var gActiveBlock = {
-      blockIndex : 2,
-      blockShape : blockShape[2],
+      blockIndex : 1,
+      blockShape : blockShape[1],
       blockCenter : [0,0]      
     }
 
@@ -93,6 +93,9 @@
       data : [],
       backgroundColor : "rgba(255,255,255,0.80)",
       borderColor : "black",
+      xLimit : [0,10],
+      yLimit : [0,25],
+      
     };
 
     var rotateRight = [[0,-1],[1,0]];
@@ -101,13 +104,12 @@
     function rotateArray( iRotation, iArray ) {
       var ret = [];
       for( var i = 0; i < iArray.length; ++i) {
-        ret.push([iRotation[0][1]*iArray[0] + iRotation[0][1]*iArray[1], iRotation[1][1]*iArray[0] + iRotation[1][1]*iArray[1] ]);
+        ret.push([iRotation[0][1]*iArray[i][0] + iRotation[0][1]*iArray[i][1], iRotation[1][1]*iArray[i][0] + iRotation[1][1]*iArray[i][1] ]);
       }
       return ret;
     }
 
     function render() {
-      resize();
         
       var wCanvas = document.getElementById(gGlobal.viewportId);
       var wCtx = wCanvas.getContext("2d");
@@ -130,6 +132,10 @@
         [gBoard.x + wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
         [gBoard.x + wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
       ];
+
+      
+//      gBoard.xLimit = [ - Math.floor((wCenterX + wBoardCorners[1][0])/wBlockSize), Math.floor((wCenterX - wBoardCorners[1][0]) /wBlockSize) ];
+//      gBoard.yLimit = [- Math.floor((wCenterY - wBoardCorners[1][1])/wBlockSize) , Math.floor((wCenterY + wBoardCorners[1][1])/wBlockSize)];
 
       wCtx.fillStyle = gBoard.backgroundColor;
       wCtx.fillRect(wBoardCorners[0][0] + wCenterX, wBoardCorners[0][1] + wCenterY, wBoardWidth, wBoardHeight);
@@ -160,8 +166,8 @@
 
       wCtx.fillStyle = blockColor[gActiveBlock.blockIndex];
       for( var i = 0; i < gActiveBlock.blockShape.length; ++i) {
-        var x = gActiveBlock.blockShape[i][0];
-        var y = gActiveBlock.blockShape[i][1];
+        var x = gActiveBlock.blockShape[i][0] + gActiveBlock.blockCenter[0];
+        var y = gActiveBlock.blockShape[i][1] + gActiveBlock.blockCenter[1];
         
         wCtx.beginPath();
         wCtx.roundRect(wAnchorX + x*wBlockSize, wAnchorY - y*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
@@ -192,7 +198,8 @@
       for (var i = 0; i < gBoard.height; ++i) {
         var newRow = new Int16Array(gBoard.width);
         for (var k = 0; k < newRow.length; ++k) {
-          newRow[k] = Math.floor(Math.random()*blockColor.length)//0;
+          newRow[k] = Math.floor(Math.random()*blockColor.length);
+          //newRow[k] = 0;
         }
         gBoard.data.push(newRow);
       }
@@ -200,16 +207,35 @@
       window.requestAnimationFrame(render);
     }
     
+    function moveX(iDx) {
+      gActiveBlock.blockCenter[0] += iDx;
+      if (gActiveBlock.blockCenter[0] < gBoard.xLimit[0]) gActiveBlock.blockCenter[0] = gBoard.xLimit[0];
+      if (gActiveBlock.blockCenter[0] >= gBoard.xLimit[1]) gActiveBlock.blockCenter[0] = gBoard.xLimit[1] - 1;
+    }
+    
+    function moveY(iDy) {
+      gActiveBlock.blockCenter[1] += iDy;
+      if (gActiveBlock.blockCenter[1] < gBoard.yLimit[0]) gActiveBlock.blockCenter[1] = gBoard.yLimit[0];
+      if (gActiveBlock.blockCenter[1] >= gBoard.yLimit[1]) gActiveBlock.blockCenter[1] = gBoard.yLimit[1] - 2;  
+    }
     window.addEventListener("load", init);
-    window.addEventListener("resize", resize);
+//    window.addEventListener("resize", resize);
     document.addEventListener('keydown', function(event) {
-    if(event.keyCode == 37) {
-        alert('Left was pressed');
-    }
-    else if(event.keyCode == 39) {
-        alert('Right was pressed');
-    }
-});
+      if(event.keyCode == 37) {
+        moveX(-1);
+      }
+      else if(event.keyCode == 39) {
+        moveX(1);
+      }
+      else if(event.keyCode == 40) {
+        moveY(-1);
+      }
+      else if(event.keyCode == 38) {
+        moveY(1);
+        //gActiveBlock.blockShape = rotateArray(rotateRight, gActiveBlock.blockShape);
+        ++gActiveBlock.blockCenter[1];
+      }
+    });
   </script>
 </head>
 <body>
