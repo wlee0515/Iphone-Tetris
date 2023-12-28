@@ -217,12 +217,7 @@
       document.getElementById(gGlobal.debugId).innerHTML += "<div>[" + window.innerWidth + ","+ window.innerHeight + "," + window.navigator.standalone + "] </div>";
 
       var wCanvas = document.getElementById(gGlobal.viewportId);
-      if (true == window.navigator.standalone) {
-        wCanvas.parentElement.height = window.innerHeight;
-      }
-      else {
-        wCanvas.parentElement.height = window.innerHeight - 200;
-      }
+      wCanvas.parentElement.height = wCanvas.parentElement.getBoundingClientRect.bottom;
       wCanvas.parentElement.width = window.innerWidth;
 
       if (null != wCanvas) {
