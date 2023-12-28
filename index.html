@@ -48,6 +48,7 @@
       background-size: cover; 
       background-color: black; /*this is the color of the navbar*/
  
+      /* disable selection to prevent selecting the view port*/
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       -khtml-user-select: none;
@@ -55,12 +56,6 @@
       -ms-user-select: none;
       user-select: none;
 
-    }
-
-    #tetris {
-      width: 320px;
-      height: 460px;
-      background: #000;
     }
 
     #debug_div {
@@ -71,10 +66,13 @@
     }
 
     #viewport_div {
+      /* Make this default to 100%, will scale on resize*/
       width: 100%;
       height: 100%;
       overflow: hidden;
-      position: fixed;
+
+      /* fix position to the bottom to account for the dynamically changing bottom nav bar in safari*/
+      position: fixed; 
       bottom: 0;
     }
 
@@ -212,10 +210,7 @@
 
     function resize() {
       
-      //adjust for bottom navbar on phone
-
-      document.getElementById(gGlobal.debugId).innerHTML += "<div>[" + window.innerWidth + ","+ window.innerHeight + "," + window.navigator.standalone + "] </div>";
-
+      //change the size of the Canvas tomatch sceen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
       var wCanvas = document.getElementById(gGlobal.viewportId);
       wCanvas.parentElement.height = wCanvas.parentElement.getBoundingClientRect.bottom;
       wCanvas.parentElement.width = window.innerWidth;
