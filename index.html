@@ -55,8 +55,6 @@
       -ms-user-select: none;
       user-select: none;
 
-      position: fixed;
-      bottom: 0;
     }
 
     #tetris {
@@ -76,6 +74,8 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      position: fixed;
+      bottom: 0;
     }
 
     #viewport {
@@ -216,16 +216,15 @@
 
       document.getElementById(gGlobal.debugId).innerHTML += "<div>[" + window.innerWidth + ","+ window.innerHeight + "," + window.navigator.standalone + "] </div>";
 
+      var wCanvas = document.getElementById(gGlobal.viewportId);
       if (true == window.navigator.standalone) {
-        document.body.height = window.innerHeight;
+        wCanvas.parentElement.height = window.innerHeight;
       }
       else {
-        document.body.height = window.innerHeight - 200;
+        wCanvas.parentElement.height = window.innerHeight - 200;
       }
-      document.body.width = window.innerWidth;
+      wCanvas.parentElement.width = window.innerWidth;
 
-
-      var wCanvas = document.getElementById(gGlobal.viewportId);
       if (null != wCanvas) {
         wCanvas.height = wCanvas.parentElement.clientHeight;
         wCanvas.width = wCanvas.parentElement.clientWidth;
