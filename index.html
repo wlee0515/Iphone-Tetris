@@ -204,38 +204,8 @@
         wCtx.stroke();
 
       }
-
-      window.requestAnimationFrame(render);
     }
 
-    function resize() {
-      
-      //change the size of the Canvas tomatch sceen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
-      var wCanvas = document.getElementById(gGlobal.viewportId);
-      wCanvas.parentElement.height = wCanvas.parentElement.getBoundingClientRect.bottom;
-      wCanvas.parentElement.width = window.innerWidth;
-
-      if (null != wCanvas) {
-        wCanvas.height = wCanvas.parentElement.clientHeight;
-        wCanvas.width = wCanvas.parentElement.clientWidth;
-      }
-    }
-
-    function init() {
-      resize();
-      gBoard.data = [];
-      for (var i = 0; i < gBoard.height; ++i) {
-        var newRow = new Int16Array(gBoard.width);
-        for (var k = 0; k < newRow.length; ++k) {
-          //newRow[k] = Math.floor(Math.random()*blockColor.length);
-          newRow[k] = 0;
-        }
-        gBoard.data.push(newRow);
-      }
-      
-      window.requestAnimationFrame(render);
-    }
-    
     function testPosition( iNewCenter, iShape) {
       for( var i = 0; i < iShape.length; ++i) {
         var y = iShape[i][1] + iNewCenter[1];
@@ -264,7 +234,6 @@
     }
     
     function moveY(iDy) {
-      
       var sign = iDy/Math.abs(iDy);
       var mag = Math.abs(iDy);
       for( var i = mag; i >= 0; --i ) {
@@ -273,7 +242,44 @@
           gActiveBlock.blockCenter = newCenter;
         }
       }
-     }
+    }
+
+    function gameLoop() {
+      
+      render();
+      window.requestAnimationFrame(gameLoop);
+    }
+
+    function resize() {
+      
+      //change the size of the Canvas tomatch sceen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
+      var wCanvas = document.getElementById(gGlobal.viewportId);
+      wCanvas.parentElement.height = wCanvas.parentElement.getBoundingClientRect.bottom;
+      wCanvas.parentElement.width = window.innerWidth;
+
+      if (null != wCanvas) {
+        wCanvas.height = wCanvas.parentElement.clientHeight;
+        wCanvas.width = wCanvas.parentElement.clientWidth;
+      }
+    }
+
+    function init() {
+      resize();
+      gBoard.data = [];
+      for (var i = 0; i < gBoard.height; ++i) {
+        var newRow = new Int16Array(gBoard.width);
+        for (var k = 0; k < newRow.length; ++k) {
+          //newRow[k] = Math.floor(Math.random()*blockColor.length);
+          newRow[k] = 0;
+        }
+        gBoard.data.push(newRow);
+      }
+      
+      window.requestAnimationFrame(render);
+      window.requestAnimationFrame(gameLoop);
+    }
+    
+
     window.addEventListener("load", init);
     window.addEventListener("resize", resize);
     document.addEventListener('keydown', function(event) {
