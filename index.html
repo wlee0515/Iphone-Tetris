@@ -213,7 +213,7 @@
       document.body.height = window.innerHeight;
       document.body.width = window.innerWidth;
 
-      document.getElementById(gGlobal.debugId).innerHTML += "<div>[" + document.body.width + ","+ document.body.height + "] </div>";
+      document.getElementById(gGlobal.debugId).innerHTML += "<div>[" + window.innerWidth + ","+ window.innerHeight + "," + window.navigator.standalone + "] </div>";
 
       var wCanvas = document.getElementById(gGlobal.viewportId);
       if (null != wCanvas) {
