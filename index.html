@@ -2,8 +2,29 @@
 <html manifest="tetris.manifest">
 
 <head>
+  <!--
+    https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html
+  -->
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!--
+    Sets whether a web application runs in full-screen mode.
+
+    If content is set to yes, the web application runs in full-screen mode; otherwise, it does not. The default behavior is to use Safari to display web content.
+    You can determine whether a webpage is displayed in full-screen mode using the window.navigator.standalone read-only Boolean JavaScript property.
+  -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!--
+    Sets the style of the status bar for a web application.
+
+    This meta tag has no effect unless you first specify full-screen mode as described in apple-apple-mobile-web-app-capable.
+    If content is set to default, the status bar appears normal.
+    If set to black, the status bar has a black background.
+    If set to black-translucent, the status bar is black and translucent.
+    If set to default or black, the web content is displayed below the status bar.
+    If set to black-translucent, the web content is displayed on the entire screen, partially obscured by the status bar.
+    The default value is default.
+  -->
   <link rel="apple-touch-icon" href="favicon.ico" />
 
   <!-- startup image needs to be defined for each iphone resolution, determineable by media query-->
@@ -41,6 +62,13 @@
       background: #000;
     }
 
+    #debug_div {
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: rgba(255, 255, 255, 0.75);
+    }
+
     #viewport_div {
       width: 100%;
       height: 100%;
@@ -54,7 +82,8 @@
   <script>
 
     var gGlobal = {
-      viewportId : "viewport"
+      viewportId : "viewport",
+      debugId : "debug_div",
     };
 
     var blockColor  = [
@@ -132,7 +161,6 @@
         [gBoard.x + wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
         [gBoard.x + wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
       ];
-
       
 //      gBoard.xLimit = [ - Math.floor((wCenterX + wBoardCorners[1][0])/wBlockSize), Math.floor((wCenterX - wBoardCorners[1][0]) /wBlockSize) ];
 //      gBoard.yLimit = [- Math.floor((wCenterY - wBoardCorners[1][1])/wBlockSize) , Math.floor((wCenterY + wBoardCorners[1][1])/wBlockSize)];
@@ -185,6 +213,8 @@
       document.body.height = window.innerHeight;
       document.body.width = window.innerWidth;
 
+      document.getElementById(gGlobal.debugId).innerHTML += "<div>[" + document.body.width + ","+ document.body.height + "] </div>";
+
       var wCanvas = document.getElementById(gGlobal.viewportId);
       if (null != wCanvas) {
         wCanvas.height = wCanvas.parentElement.clientHeight;
@@ -198,8 +228,8 @@
       for (var i = 0; i < gBoard.height; ++i) {
         var newRow = new Int16Array(gBoard.width);
         for (var k = 0; k < newRow.length; ++k) {
-          newRow[k] = Math.floor(Math.random()*blockColor.length);
-          //newRow[k] = 0;
+          //newRow[k] = Math.floor(Math.random()*blockColor.length);
+          newRow[k] = 0;
         }
         gBoard.data.push(newRow);
       }
@@ -207,19 +237,46 @@
       window.requestAnimationFrame(render);
     }
     
+    function testPosition( iNewCenter, iShape) {
+      for( var i = 0; i < iShape.length; ++i) {
+        var y = iShape[i][1] + iNewCenter[1];
+        if ( y < 0 ) return false;
+        if ( y >= gBoard.data.length ) return false;
+
+        var x = iShape[i][0] + iNewCenter[0];        
+        if ( x < 0 ) return false;
+        if ( x >= gBoard.data[y].length ) return false;
+
+        if (0 != gBoard.data[y][x]) return false;
+      }
+
+      return true;
+    }
+
     function moveX(iDx) {
-      gActiveBlock.blockCenter[0] += iDx;
-      if (gActiveBlock.blockCenter[0] < gBoard.xLimit[0]) gActiveBlock.blockCenter[0] = gBoard.xLimit[0];
-      if (gActiveBlock.blockCenter[0] >= gBoard.xLimit[1]) gActiveBlock.blockCenter[0] = gBoard.xLimit[1] - 1;
+      var sign = iDx/Math.abs(iDx);
+      var mag = Math.abs(iDx);
+      for( var i = mag; i >= 0; --i ) {
+        var newCenter = [gActiveBlock.blockCenter[0] + sign*i, gActiveBlock.blockCenter[1]];
+        if (true == testPosition(newCenter, gActiveBlock.blockShape)) {
+          gActiveBlock.blockCenter = newCenter;
+        }
+      }
     }
     
     function moveY(iDy) {
-      gActiveBlock.blockCenter[1] += iDy;
-      if (gActiveBlock.blockCenter[1] < gBoard.yLimit[0]) gActiveBlock.blockCenter[1] = gBoard.yLimit[0];
-      if (gActiveBlock.blockCenter[1] >= gBoard.yLimit[1]) gActiveBlock.blockCenter[1] = gBoard.yLimit[1] - 2;  
-    }
+      
+      var sign = iDy/Math.abs(iDy);
+      var mag = Math.abs(iDy);
+      for( var i = mag; i >= 0; --i ) {
+        var newCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1] + sign*i];
+        if (true == testPosition(newCenter, gActiveBlock.blockShape)) {
+          gActiveBlock.blockCenter = newCenter;
+        }
+      }
+     }
     window.addEventListener("load", init);
-//    window.addEventListener("resize", resize);
+    window.addEventListener("resize", resize);
     document.addEventListener('keydown', function(event) {
       if(event.keyCode == 37) {
         moveX(-1);
@@ -233,7 +290,6 @@
       else if(event.keyCode == 38) {
         moveY(1);
         //gActiveBlock.blockShape = rotateArray(rotateRight, gActiveBlock.blockShape);
-        ++gActiveBlock.blockCenter[1];
       }
     });
   </script>
@@ -242,5 +298,6 @@
   <div id="viewport_div">
     <canvas id="viewport"></canvas>
   </div>
+  <div id="debug_div"></div>
 </body>
 </html>
