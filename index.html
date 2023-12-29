@@ -310,7 +310,11 @@
       }
     }
     
+    var lastRotate = Date.now();
     function rotate(iRotation) {
+      
+      if (100 > Date.now() - lastRotate) return;
+      lastRotate = Date.now();
       
       var wShape = rotateArray(iRotation, gActiveBlock.blockShape);
 
