@@ -291,6 +291,22 @@
         }
       }
     }
+    
+    function rotate(iRotation) {
+      
+      var wShape = rotateArray(iRotation, gActiveBlock.blockShape);
+
+      var testOrder = [0, -1, 1];
+
+      for (var i = 0; i < testOrder.length; ++i) {
+        var newCenter = [gActiveBlock.blockCenter[0] + testOrder[i], gActiveBlock.blockCenter[1]];
+        if (true == testPosition(newCenter, wShape)) {
+          gActiveBlock.blockShape = wShape;
+          gActiveBlock.blockCenter = newCenter;
+          break;
+        }
+      }
+    }
 
     function paintBoard( blockData, boardData ) {
       for( var i = 0; i < blockData.blockShape.length; ++i) {
@@ -409,7 +425,7 @@
       }
       else if(event.keyCode == 38) {
         //moveY(1);
-        gActiveBlock.blockShape = rotateArray(rotateRight, gActiveBlock.blockShape);
+        rotate(rotateRight);
       }
     });
   </script>
