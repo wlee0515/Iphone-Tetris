@@ -418,6 +418,8 @@
           alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
           createBoard();
           gGameState.score = 0;
+          gGameState.moves = 0;
+          gActiveBlock.blockIndex = 0;
         }
 
         gGameState.lastUpdate = Date.now();
