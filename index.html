@@ -97,6 +97,8 @@
       "rgba(255,69,0,1)",
     ];
 
+    var ghostBlockColor = "rgba(100,100,100,0.3)";
+
     var blockShape = [
       [],
       [[0,0],[0,1],[1,0],[1,1]],
@@ -112,7 +114,8 @@
       blockIndex : 0,
       blockShape : blockShape[0],
       blockCenter : [0,0],
-      lastBlockCenter : [0,0]
+      lastBlockCenter : [0,0],
+      ghostBlockCenter : [0,0],
     }
 
     var gBoard = {
@@ -233,6 +236,18 @@
         }
       }
 
+      wCtx.fillStyle = ghostBlockColor;
+      for( var i = 0; i < gActiveBlock.blockShape.length; ++i) {
+        var x = gActiveBlock.blockShape[i][0] + gActiveBlock.ghostBlockCenter[0];
+        var y = gActiveBlock.blockShape[i][1] + gActiveBlock.ghostBlockCenter[1];
+        
+        wCtx.beginPath();
+        wCtx.roundRect(wAnchorX + x*wBlockSize, wAnchorY - y*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
+        wCtx.fill();
+        wCtx.stroke();
+
+      }
+      
       wCtx.fillStyle = blockColor[gActiveBlock.blockIndex];
       for( var i = 0; i < gActiveBlock.blockShape.length; ++i) {
         var x = gActiveBlock.blockShape[i][0] + gActiveBlock.blockCenter[0];
@@ -395,40 +410,48 @@
         gGameState.upcomingBlock.push(Math.floor(Math.random()*7 + 1));
       }
 
-      if (0 == gActiveBlock.blockIndex) {
-        gActiveBlock.blockIndex = gGameState.upcomingBlock[0];
-        gGameState.upcomingBlock.shift();
-
-        gActiveBlock.blockShape = rotateArray(identity, blockShape[gActiveBlock.blockIndex]);
+      
+      if (250 < (Date.now() - gGameState.lastUpdate)) {
         
-        var centerSet = false;
-        gActiveBlock.blockCenter = [Math.floor(gBoard.width/2), gBoard.height];
-        for(var i = 0; i < 5 ; ++i) {
-          --gActiveBlock.blockCenter[1];
-          if (true == testPosition(gActiveBlock.blockCenter, gActiveBlock.blockShape ) ) {
-            centerSet = true;
-            break;
+        gGameState.lastUpdate = Date.now();
+
+        if (0 == gActiveBlock.blockIndex) {
+          gActiveBlock.blockIndex = gGameState.upcomingBlock[0];
+          gGameState.upcomingBlock.shift();
+
+          gActiveBlock.blockShape = rotateArray(identity, blockShape[gActiveBlock.blockIndex]);
+
+          var centerSet = false;
+          gActiveBlock.blockCenter = [Math.floor(gBoard.width/2), gBoard.height];
+          for(var i = 0; i < 5 ; ++i) {
+            --gActiveBlock.blockCenter[1];
+            if (true == testPosition(gActiveBlock.blockCenter, gActiveBlock.blockShape ) ) {
+              centerSet = true;
+              break;
+            }
+          }
+
+          gActiveBlock.lastBlockCenter = [-100, -100];
+
+          if (false == centerSet) {
+            render();
+            alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
+            createBoard();
+            gGameState.score = 0;
+            gGameState.moves = 0;
+            gActiveBlock.blockIndex = 0;
           }
         }
 
-        gActiveBlock.lastBlockCenter = [-100, -100];
-
-        if (false == centerSet) {
-          render();
-          alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
-          createBoard();
-          gGameState.score = 0;
-          gGameState.moves = 0;
-          gActiveBlock.blockIndex = 0;
-        }
-
-        gGameState.lastUpdate = Date.now();
-      }
-      
-      if (250 < (Date.now() - gGameState.lastUpdate)) {
-        gGameState.lastUpdate = Date.now();
+        var wNewGhostCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1]];
+        do {
+          --wNewGhostCenter[1];
+        }while(true == testPosition( wNewGhostCenter , gActiveBlock.blockShape))
+        ++wNewGhostCenter[1];
+        gActiveBlock.ghostBlockCenter = wNewGhostCenter;
         
-        if (gActiveBlock.lastBlockCenter[0] == gActiveBlock.blockCenter[0] && gActiveBlock.lastBlockCenter[1] == gActiveBlock.blockCenter[1]) {
+        if (gActiveBlock.ghostBlockCenter[0] == gActiveBlock.blockCenter[0] && gActiveBlock.ghostBlockCenter[1] == gActiveBlock.blockCenter[1]
+         && gActiveBlock.lastBlockCenter[0] == gActiveBlock.blockCenter[0] && gActiveBlock.lastBlockCenter[1] == gActiveBlock.blockCenter[1]) {
           paintBoard(gActiveBlock, gBoard.data);
           wRowsToRemove = [];
           for( var i = 0; i < gBoard.data.length; ++i) {
@@ -486,17 +509,20 @@
     window.addEventListener("load", init);
     window.addEventListener("resize", resize);
     document.addEventListener('keydown', function(event) {
-      if(event.keyCode == 37) {
+      if(event.keyCode == 37  || event.key == "a") {
+        // left arrow
         moveX(-1);
       }
-      else if(event.keyCode == 39) {
+      else if(event.keyCode == 39 || event.key == "d") {
+        // right arrow
         moveX(1);
       }
-      else if(event.keyCode == 40) {
+      else if(event.keyCode == 40 || event.key == "s") {
+        // down arrow
         moveY(-1);
       }
-      else if(event.keyCode == 38) {
-        //moveY(1);
+      else if(event.keyCode == 38 || event.key == "w") {
+        // up arrow
         rotate(rotateRight);
       }
     });
