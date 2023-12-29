@@ -177,7 +177,7 @@
     }
 
     function render() {
-        
+      resize();
       var wCanvas = document.getElementById(gGlobal.viewportId);
       var wCtx = wCanvas.getContext("2d");
       
@@ -379,12 +379,12 @@
 
       //change the size of the Canvas to match screen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
       var wCanvas = document.getElementById(gGlobal.viewportId);
-      wCanvas.parentElement.height = wCanvas.parentElement.getBoundingClientRect.bottom;
+      wCanvas.parentElement.height = wCanvas.parentElement.offsetTop + wCanvas.offsetHeight;
       wCanvas.parentElement.width = window.innerWidth;
 
       if (null != wCanvas) {
-        wCanvas.height = wCanvas.parentElement.clientHeight;
-        wCanvas.width = wCanvas.parentElement.clientWidth;
+        wCanvas.height = wCanvas.parentElement.height;
+        wCanvas.width = wCanvas.parentElement.width;
       }
     }
 
