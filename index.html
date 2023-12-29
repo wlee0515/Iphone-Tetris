@@ -56,6 +56,8 @@
       -ms-user-select: none;
       user-select: none;
 
+      text-align: center;
+
     }
 
     #debug_div {
@@ -67,10 +69,7 @@
 
     #viewport_div {
       /* Make this default to 100%, will scale on resize*/
-      width: 100%;
-      height: 100%;
       overflow: hidden;
-
       /* fix position to the bottom to account for the dynamically changing bottom nav bar in safari*/
       position: fixed; 
       bottom: 0;
@@ -377,7 +376,7 @@
       
       document.body.height = window.innerHeight;
       document.body.width = window.innerWidth;
-      
+
       //change the size of the Canvas to match screen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
       var wCanvas = document.getElementById(gGlobal.viewportId);
       wCanvas.parentElement.height = wCanvas.parentElement.getBoundingClientRect.bottom;
