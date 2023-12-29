@@ -124,7 +124,8 @@
       backgroundColor : "rgba(255,255,255,0.80)",
       borderColor : "black",
       xLimit : [0,10],
-      yLimit : [0,25],      
+      yLimit : [0,25],
+      blockSize : 1,
     };
 
     var gGameState = {
@@ -189,6 +190,8 @@
       var wBlockSizeW = Math.floor( wCanvas.clientWidth/(gBoard.width + 5));
       var wBlockSizeH = Math.floor( wCanvas.clientHeight/(gBoard.height + 5));
       var wBlockSize = wBlockSizeW < wBlockSizeH ? wBlockSizeW : wBlockSizeH;
+
+      gBoard.blockSize = wBlockSize;
 
       var wBoardWidth = gBoard.width*wBlockSize;
       var wBoardHeight = gBoard.height*wBlockSize;
@@ -308,6 +311,74 @@
       }
     }
 
+    var touchPoints = [];
+    function processTouchStart(touchObj) {
+      
+      var existingObj = null;
+      for (var k = 0; k < touchPoints.length ; ++k) {
+        if (touchPoints[k].id == touchObj.identifier) {
+          existingObj = touchPoints[k];
+          break;
+        }
+      }
+      if (null != existingObj) {
+        existingObj.id = touchObj.id;
+        existingObj.x = touchObj.x;
+        existingObj.y = touchObj.y;
+        existingObj.x0 = touchObj.x;
+        existingObj.y0 = touchObj.y;
+      }
+      else {
+        touchPoints.push({
+          id : touchObj.id,
+          x : touchObj.x,
+          y : touchObj.y,
+          x0 : touchObj.x,
+          y0 : touchObj.y,
+        });
+      }
+    }
+
+    function processTouchMove(touchObj) {
+      for (var k = 0; k < touchPoints.length ; ++k) {
+        if (touchPoints[k].id == touchObj.id) {
+
+          var dx = (touchObj.x - touchPoints[k].x)/gBoard.blockSize;
+          var dy = (touchObj.y - touchPoints[k].y)/gBoard.blockSize;
+          var update = false;
+          if (1 < Math.abs(dx)) {
+            moveX(Math.floor(dx));
+            update = true;
+          }
+          else if (1 < dy) {
+            moveY(Math.floor(-dy));  
+            update = true;
+          }
+
+          if (true == update) {
+            touchPoints[k].x = touchObj.x - (dx - Math.floor(dx))*gBoard.blockSize;
+            touchPoints[k].y = touchObj.y - (dy - Math.floor(dy))*gBoard.blockSize;
+          }
+        }
+      }
+    }
+    
+    function processTouchEnd(touchObj) {
+      for (var k = touchPoints.length - 1; k >= 0 ; --k) {
+        if (touchPoints[k].id == touchObj.id) {
+
+          var dx = (touchObj.x - touchPoints[k].x0)/gBoard.blockSize;
+          var dy = (touchObj.y - touchPoints[k].y0)/gBoard.blockSize;
+
+          if (1 > Math.abs(dx) && 1 > Math.abs(dy)) {
+            rotate(rotateRight);
+          }
+
+          touchPoints.splice(k, 1);
+        }
+      }
+    }
+
     function paintBoard( blockData, boardData ) {
       for( var i = 0; i < blockData.blockShape.length; ++i) {
         var x = blockData.blockShape[i][0] + blockData.blockCenter[0];
@@ -340,7 +411,6 @@
           }
         }
 
-        gActiveBlock.lastBlockCenter = [-100, -100];
         gActiveBlock.lastBlockCenter = [-100, -100];
 
         if (false == centerSet) {
@@ -428,6 +498,62 @@
         rotate(rotateRight);
       }
     });
+    
+    document.addEventListener("mousedown", function( event ){
+      processTouchStart ({
+        id : -1,
+        x : event.clientX,
+        y : event.clientY,
+      })
+    });
+    document.addEventListener("mousemove", function( event ){
+      processTouchMove ({
+        id : -1,
+        x : event.clientX,
+        y : event.clientY,
+      })
+    });
+    document.addEventListener("mouseup", function( event ){
+      processTouchEnd ({
+        id : -1,
+        x : event.clientX,
+        y : event.clientY,
+      })
+    });
+    document.addEventListener("touchstart", function( event ){
+      for (var i = 0; i < event.changedTouches.length ; ++i) {
+        var touchObj = event.changedTouches[i];
+
+        processTouchStart ({
+          id : touchObj.identifier,
+          x : touchObj.clientX,
+          y : touchObj.clientY,
+        })
+      }
+    });
+    
+    document.addEventListener("touchmove", function( event ){
+      for (var i = 0; i < event.changedTouches.length ; ++i) {
+        var touchObj = event.changedTouches[i];
+        processTouchMove({
+          id : touchObj.identifier,
+          x : touchObj.clientX,
+          y : touchObj.clientY,
+        });
+      }
+    });
+
+    document.addEventListener("touchend", function( event ){
+      for (var i = 0; i < event.changedTouches.length ; ++i) {
+        var touchObj = event.changedTouches[i];
+        processTouchEnd({
+          id : touchObj.identifier,
+          x : touchObj.clientX,
+          y : touchObj.clientY,
+        })
+      }
+    });
+
   </script>
 </head>
 <body>
