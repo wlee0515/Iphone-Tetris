@@ -134,6 +134,7 @@
     var gGameState = {
       upcomingBlock : [],
       lastUpdate : Date.now(),
+      lastInput : Date.now(),
       moves : 0,
       score : 0,
     }
@@ -289,6 +290,10 @@
     }
 
     function moveX(iDx) {
+
+      if (25 > Date.now() - gGameState.lastInput) return;
+      gGameState.lastInput = Date.now();
+
       var sign = iDx/Math.abs(iDx);
       var mag = Math.abs(iDx);
       for( var i = mag; i >= 0; --i ) {
@@ -300,6 +305,10 @@
     }
     
     function moveY(iDy) {
+
+      if (25 > Date.now() - gGameState.lastInput) return;
+      gGameState.lastInput = Date.now();
+
       var sign = iDy/Math.abs(iDy);
       var mag = Math.abs(iDy);
       for( var i = mag; i >= 0; --i ) {
@@ -310,12 +319,11 @@
       }
     }
     
-    var lastRotate = Date.now();
     function rotate(iRotation) {
       
-      if (100 > Date.now() - lastRotate) return;
-      lastRotate = Date.now();
-      
+      if (25 > Date.now() - gGameState.lastInput) return;
+      gGameState.lastInput = Date.now();
+
       var wShape = rotateArray(iRotation, gActiveBlock.blockShape);
 
       var testOrder = [0, -1, 1];
