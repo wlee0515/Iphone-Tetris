@@ -291,7 +291,7 @@
 
     function moveX(iDx) {
 
-      if (25 > Date.now() - gGameState.lastInput) return;
+      if (50 > Date.now() - gGameState.lastInput) return;
       gGameState.lastInput = Date.now();
 
       var sign = iDx/Math.abs(iDx);
@@ -306,7 +306,7 @@
     
     function moveY(iDy) {
 
-      if (25 > Date.now() - gGameState.lastInput) return;
+      if (50 > Date.now() - gGameState.lastInput) return;
       gGameState.lastInput = Date.now();
 
       var sign = iDy/Math.abs(iDy);
@@ -321,7 +321,7 @@
     
     function rotate(iRotation) {
       
-      if (25 > Date.now() - gGameState.lastInput) return;
+      if (50 > Date.now() - gGameState.lastInput) return;
       gGameState.lastInput = Date.now();
 
       var wShape = rotateArray(iRotation, gActiveBlock.blockShape);
@@ -386,6 +386,7 @@
             touchPoints[k].x = touchObj.x - (dx - Math.floor(dx))*gBoard.blockSize;
             touchPoints[k].y = touchObj.y - (dy - Math.floor(dy))*gBoard.blockSize;
           }
+          break;
         }
       }
     }
@@ -402,6 +403,7 @@
           }
 
           touchPoints.splice(k, 1);
+          break;
         }
       }
     }
