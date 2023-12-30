@@ -134,9 +134,9 @@
     var gGameState = {
       lastIterationTime : Date.now(),
       upcomingBlock : [],
-      decendRate : 5,
+      decendRate : 4.5,
       slackTime : 500,
-      remainingSlackTime : 100,
+      remainingSlackTime : 0,
       moves : 0,
       score : 0,
       inputQueue : []
@@ -519,6 +519,7 @@
       var wNow = Date.now();
       var wDt = (wNow - gGameState.lastIterationTime)/1000;
       gGameState.lastIterationTime = wNow;
+      if (0.025 < wDt) wDt = 0.025; // limit elapseTime
 
       var wIsGameOver = ! gameLoop(wDt);
 
