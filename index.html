@@ -132,11 +132,14 @@
     };
 
     var gGameState = {
+      lastIterationTime : Date.now(),
       upcomingBlock : [],
-      lastUpdate : Date.now(),
-      lastInput : Date.now(),
+      decendRate : 5,
+      slackTime : 500,
+      remainingSlackTime : 100,
       moves : 0,
       score : 0,
+      inputQueue : []
     }
 
     var scorePoints = [0, 100, 300, 500, 700, 900];
@@ -182,7 +185,6 @@
     }
 
     function render() {
-      resize();
       var wCanvas = document.getElementById(gGlobal.viewportId);
       var wCtx = wCanvas.getContext("2d");
       
@@ -206,9 +208,6 @@
         [gBoard.x + wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
         [gBoard.x + wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
       ];
-      
-//      gBoard.xLimit = [ - Math.floor((wCenterX + wBoardCorners[1][0])/wBlockSize), Math.floor((wCenterX - wBoardCorners[1][0]) /wBlockSize) ];
-//      gBoard.yLimit = [- Math.floor((wCenterY - wBoardCorners[1][1])/wBlockSize) , Math.floor((wCenterY + wBoardCorners[1][1])/wBlockSize)];
 
       wCtx.fillStyle = gBoard.backgroundColor;
       wCtx.fillRect(wBoardCorners[0][0] + wCenterX, wBoardCorners[0][1] + wCenterY, wBoardWidth, wBoardHeight);
@@ -274,30 +273,39 @@
     }
 
     function testPosition( iNewCenter, iShape) {
+      
       for( var i = 0; i < iShape.length; ++i) {
-        var y = iShape[i][1] + iNewCenter[1];
-        if ( y < 0 ) return false;
-        if ( y >= gBoard.data.length ) return false;
+        var wYArr = [Math.floor(iNewCenter[1]), Math.ceil(iNewCenter[1]) ];
+        var wXArr = [Math.floor(iNewCenter[0]), Math.ceil(iNewCenter[0]) ];
 
-        var x = iShape[i][0] + iNewCenter[0];        
-        if ( x < 0 ) return false;
-        if ( x >= gBoard.data[y].length ) return false;
+        for(var j = 0; j < wYArr.length; ++j) {
+          var y = iShape[i][1] + wYArr[j];
+          if ( y < 0 ) return false;
+          if ( y >= gBoard.data.length ) return false;
 
-        if (0 != gBoard.data[y][x]) return false;
+          for(var k = 0; k < wXArr.length; ++k) {
+            var x = iShape[i][0] + wXArr[k];        
+            if ( x < 0 ) return false;
+            if ( x >= gBoard.data[y].length ) return false;
+
+            if (0 != gBoard.data[y][x]) return false;
+          }
+        }
       }
 
       return true;
     }
 
     function moveX(iDx) {
-
-      if (50 > Date.now() - gGameState.lastInput) return;
-      gGameState.lastInput = Date.now();
-
       var sign = iDx/Math.abs(iDx);
       var mag = Math.abs(iDx);
       for( var i = mag; i >= 0; --i ) {
         var newCenter = [gActiveBlock.blockCenter[0] + sign*i, gActiveBlock.blockCenter[1]];
+        if (newCenter[0] < 0) newCenter[0] = 0;
+        if (newCenter[0] >= gBoard.width) newCenter[0] = gBoard.width;
+        if (newCenter[1] < 0) newCenter[1] = 0;
+        if (newCenter[0] >= gBoard.height) newCenter[1] = gBoard.height;
+
         if (true == testPosition(newCenter, gActiveBlock.blockShape)) {
           gActiveBlock.blockCenter = newCenter;
         }
@@ -305,14 +313,15 @@
     }
     
     function moveY(iDy) {
-
-      //if (50 > Date.now() - gGameState.lastInput) return;
-      //gGameState.lastInput = Date.now();
-
       var sign = iDy/Math.abs(iDy);
       var mag = Math.abs(iDy);
       for( var i = mag; i >= 0; --i ) {
         var newCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1] + sign*i];
+        if (newCenter[0] < 0) newCenter[0] = 0;
+        if (newCenter[0] >= gBoard.width) newCenter[0] = gBoard.width;
+        if (newCenter[1] < 0) newCenter[1] = 0;
+        if (newCenter[0] >= gBoard.height) newCenter[1] = gBoard.height;
+
         if (true == testPosition(newCenter, gActiveBlock.blockShape)) {
           gActiveBlock.blockCenter = newCenter;
         }
@@ -320,14 +329,8 @@
     }
     
     function rotate(iRotation) {
-      
-      if (50 > Date.now() - gGameState.lastInput) return;
-      gGameState.lastInput = Date.now();
-
       var wShape = rotateArray(iRotation, gActiveBlock.blockShape);
-
       var testOrder = [0, -1, 1];
-
       for (var i = 0; i < testOrder.length; ++i) {
         var newCenter = [gActiveBlock.blockCenter[0] + testOrder[i], gActiveBlock.blockCenter[1]];
         if (true == testPosition(newCenter, wShape)) {
@@ -354,6 +357,7 @@
         existingObj.y = touchObj.y;
         existingObj.x0 = touchObj.x;
         existingObj.y0 = touchObj.y;
+        existingObj.t0 = Date.now();
       }
       else {
         touchPoints.push({
@@ -362,6 +366,7 @@
           y : touchObj.y,
           x0 : touchObj.x,
           y0 : touchObj.y,
+          t0 : Date.now()
         });
       }
     }
@@ -374,11 +379,11 @@
           var dy = (touchObj.y - touchPoints[k].y)/gBoard.blockSize;
           var update = false;
           if (1 < Math.abs(dx)) {
-            moveX(Math.floor(dx));
+            gGameState.inputQueue.push(["moveX", Math.sign(dx)]);
             update = true;
           }
           else if (1 < dy) {
-            moveY(Math.floor(-dy));  
+            gGameState.inputQueue.push(["moveY", -Math.sign(1)]);
             update = true;
           }
 
@@ -398,8 +403,10 @@
           var dx = (touchObj.x - touchPoints[k].x0)/gBoard.blockSize;
           var dy = (touchObj.y - touchPoints[k].y0)/gBoard.blockSize;
 
-          if (1 > Math.abs(dx) && 1 > Math.abs(dy)) {
-            rotate(rotateRight);
+          if(100 > Date.now() - touchPoints[k].t0) {
+            if (1 > Math.abs(dx) && 1 > Math.abs(dy)) {
+              gGameState.inputQueue.push(["rotate", 1]);
+            }
           }
 
           touchPoints.splice(k, 1);
@@ -410,62 +417,68 @@
 
     function paintBoard( blockData, boardData ) {
       for( var i = 0; i < blockData.blockShape.length; ++i) {
-        var x = blockData.blockShape[i][0] + blockData.blockCenter[0];
-        var y = blockData.blockShape[i][1] + blockData.blockCenter[1];
+        var x = blockData.blockShape[i][0] + Math.floor(blockData.blockCenter[0]);
+        var y = blockData.blockShape[i][1] + Math.floor(blockData.blockCenter[1]);
         
         boardData[y][x] = blockData.blockIndex;
       }
     }
 
-    function gameLoop() {
+    function gameLoop(iDt) {
       
       if ( 3 >= gGameState.upcomingBlock.length) {
         //gGameState.upcomingBlock.push(7);
         gGameState.upcomingBlock.push(Math.floor(Math.random()*7 + 1));
       }
 
-      
-      if (250 < (Date.now() - gGameState.lastUpdate)) {
-        
-        gGameState.lastUpdate = Date.now();
+      if (0 == gActiveBlock.blockIndex) {
+        gActiveBlock.blockIndex = gGameState.upcomingBlock[0];
+        gGameState.upcomingBlock.shift();
+        gActiveBlock.blockShape = rotateArray(identity, blockShape[gActiveBlock.blockIndex]);
+        gActiveBlock.lastBlockCenter = [-100, -100];
 
-        if (0 == gActiveBlock.blockIndex) {
-          gActiveBlock.blockIndex = gGameState.upcomingBlock[0];
-          gGameState.upcomingBlock.shift();
-
-          gActiveBlock.blockShape = rotateArray(identity, blockShape[gActiveBlock.blockIndex]);
-
-          var centerSet = false;
-          gActiveBlock.blockCenter = [Math.floor(gBoard.width/2), gBoard.height];
-          for(var i = 0; i < 5 ; ++i) {
-            --gActiveBlock.blockCenter[1];
-            if (true == testPosition(gActiveBlock.blockCenter, gActiveBlock.blockShape ) ) {
-              centerSet = true;
-              break;
-            }
-          }
-
-          gActiveBlock.lastBlockCenter = [-100, -100];
-
-          if (false == centerSet) {
-            render();
-            alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
-            createBoard();
-            gGameState.score = 0;
-            gGameState.moves = 0;
-            gActiveBlock.blockIndex = 0;
+        var centerSet = false;
+        gActiveBlock.blockCenter = [Math.floor(gBoard.width/2), gBoard.height];
+        for(var i = 0; i < 5 ; ++i) {
+          --gActiveBlock.blockCenter[1];
+          if (true == testPosition(gActiveBlock.blockCenter, gActiveBlock.blockShape ) ) {
+            centerSet = true;
+            break;
           }
         }
 
-        var wNewGhostCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1]];
-        do {
-          --wNewGhostCenter[1];
-        }while(true == testPosition( wNewGhostCenter , gActiveBlock.blockShape))
-        ++wNewGhostCenter[1];
-        gActiveBlock.ghostBlockCenter = wNewGhostCenter;
+        if (false == centerSet) {
+          return false;
+        }
+      }
+
+      if (0 != gGameState.inputQueue.length) {
+
+        if ("moveX" == gGameState.inputQueue[0][0]) {
+          moveX(gGameState.inputQueue[0][1]);
+        }
+        else if ("moveY" == gGameState.inputQueue[0][0]) {
+          moveY(gGameState.inputQueue[0][1]);
+        }
+        if ("rotate" == gGameState.inputQueue[0][0]) {
+          rotate(rotateRight);
+        }
+
+        gGameState.inputQueue = [];
+      }
+
+      var wNewGhostCenter = [Math.floor( gActiveBlock.blockCenter[0]), Math.floor(gActiveBlock.blockCenter[1])];
+      do {
+        --wNewGhostCenter[1];
+      }while(true == testPosition( wNewGhostCenter , gActiveBlock.blockShape))
+      ++wNewGhostCenter[1];
+      gActiveBlock.ghostBlockCenter = wNewGhostCenter;
         
-        if (gActiveBlock.ghostBlockCenter[0] == gActiveBlock.blockCenter[0] && gActiveBlock.ghostBlockCenter[1] == gActiveBlock.blockCenter[1]
-         && gActiveBlock.lastBlockCenter[0] == gActiveBlock.blockCenter[0] && gActiveBlock.lastBlockCenter[1] == gActiveBlock.blockCenter[1]) {
+      var dGhostCenter = [ Math.floor(gActiveBlock.blockCenter[0]) - gActiveBlock.ghostBlockCenter[0], Math.floor(gActiveBlock.blockCenter[1]) - gActiveBlock.ghostBlockCenter[1]];
+      if ( 0.2 > Math.abs(dGhostCenter[0]) &&  0.01 > Math.abs(dGhostCenter[1])) {
+        gGameState.remainingSlackTime -= iDt*1000;
+        if (0 > gGameState.remainingSlackTime) {
+
           paintBoard(gActiveBlock, gBoard.data);
           wRowsToRemove = [];
           for( var i = 0; i < gBoard.data.length; ++i) {
@@ -480,22 +493,49 @@
               wRowsToRemove.push(i);
             }
           }
+
           if (0 != wRowsToRemove.length) {
             removeRows(wRowsToRemove);
             gGameState.score += scorePoints[wRowsToRemove.length];
           }
           ++gGameState.moves;
           gActiveBlock.blockIndex = 0;
-        }
-        else {
-          gActiveBlock.lastBlockCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1]];
-          moveY(-1);
+          return true;
         }
       }
 
-      render();
-      window.requestAnimationFrame(gameLoop);
+      moveY(-gGameState.decendRate*iDt);
+
+      if(0.01 < Math.abs(gActiveBlock.blockCenter[1] - gActiveBlock.lastBlockCenter[1])){
+        gGameState.remainingSlackTime = gGameState.slackTime;
+      }
+      gActiveBlock.lastBlockCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1]];
+
+      return true;
     }
+
+    function entryPoint() {
+
+      var wNow = Date.now();
+      var wDt = (wNow - gGameState.lastIterationTime)/1000;
+      gGameState.lastIterationTime = wNow;
+
+      var wIsGameOver = ! gameLoop(wDt);
+
+      resize(); // update window size
+      render(); // render Image
+
+      if (wIsGameOver) {
+        alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
+        createBoard();
+        gGameState.score = 0;
+        gGameState.moves = 0;
+        gGameState.inputQueue = [];
+        gActiveBlock.blockIndex = 0;
+      }
+      window.requestAnimationFrame(entryPoint); // call next frame
+    }
+
 
     function resize() {
       
@@ -516,7 +556,7 @@
     function init() {
       resize();
       createBoard();
-      window.requestAnimationFrame(gameLoop);
+      window.requestAnimationFrame(entryPoint);
     }
     
 
@@ -525,19 +565,19 @@
     document.addEventListener('keydown', function(event) {
       if(event.keyCode == 37  || event.key == "a") {
         // left arrow
-        moveX(-1);
+        gGameState.inputQueue.push(["moveX", -1]);
       }
       else if(event.keyCode == 39 || event.key == "d") {
         // right arrow
-        moveX(1);
+        gGameState.inputQueue.push(["moveX", 1]);
       }
       else if(event.keyCode == 40 || event.key == "s") {
         // down arrow
-        moveY(-1);
+        gGameState.inputQueue.push(["moveY", -1]);
       }
       else if(event.keyCode == 38 || event.key == "w") {
         // up arrow
-        rotate(rotateRight);
+        gGameState.inputQueue.push(["rotate", 1]);
       }
     });
     
