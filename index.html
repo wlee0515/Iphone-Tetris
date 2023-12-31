@@ -86,6 +86,11 @@
       debugId : "debug_div",
     };
 
+    function debugLog(iString) {
+      var wDebugDiv = document.getElementById(gGlobal.debugId);
+      wDebugDiv.innerHTML += "<span>" + iString + "</span></br>";
+    }
+
     var blockColor  = [
       "rgba(255,255,255,0.0)",
       "rgba(255,0,0,1)",
@@ -110,20 +115,11 @@
       [[0,0],[1,0],[-1,0],[-2,0]],
     ]
 
-    var gActiveBlock = {
-      blockIndex : 0,
-      blockShape : blockShape[0],
-      blockCenter : [0,0],
-      lastBlockCenter : [0,0],
-      ghostBlockCenter : [0,0],
-    }
-
     var gBoard = {
       x : 0,
       y : 0,
       height : 25,
       width : 10,
-      data : [],
       backgroundColor : "rgba(255,255,255,0.80)",
       borderColor : "black",
       xLimit : [0,10],
@@ -131,15 +127,39 @@
       blockSize : 1,
     };
 
-    var gGameState = {
-      lastIterationTime : Date.now(),
-      upcomingBlock : [],
-      decendRate : 4.5,
-      slackTime : 500,
-      remainingSlackTime : 0,
-      moves : 0,
-      score : 0,
-      inputQueue : []
+    function newGameState(iBoardWidth, iBoardHeight) {
+
+      var wBoardData = [];
+      for (var i = 0; i < iBoardHeight; ++i) {
+        var newRow = new Int16Array(iBoardWidth);
+        for (var k = 0; k < newRow.length; ++k) {
+          //newRow[k] = Math.floor(Math.random()*blockColor.length);
+          newRow[k] = 0;
+        }
+        wBoardData.push(newRow);
+      }
+
+      return {
+        lastIterationTime : Date.now(),
+        upcomingBlock : [],
+        pastBlocks : [],
+        decendRate : 1,
+        decendRateIncrease : 0.025,
+        slackTime : 500,
+        remainingSlackTime : 0,
+        moves : 0,
+        score : 0,
+        inputQueue : [],
+        boardData : wBoardData,
+        activeBlock :{
+          blockIndex : 0,
+          blockShape : blockShape[0],
+          blockCenter : [0,0],
+          lastBlockCenter : [0,0],
+          ghostBlockCenter : [0,0],
+        }
+        
+      }
     }
 
     var scorePoints = [0, 100, 300, 500, 700, 900];
@@ -155,32 +175,20 @@
       return ret;
     }
 
-    function createBoard() {
-      gBoard.data = [];
-      for (var i = 0; i < gBoard.height; ++i) {
-        var newRow = new Int16Array(gBoard.width);
-        for (var k = 0; k < newRow.length; ++k) {
-          //newRow[k] = Math.floor(Math.random()*blockColor.length);
-          newRow[k] = 0;
-        }
-        gBoard.data.push(newRow);
-      }
-    }
-
     function removeRows(iRemoveList) {
       iRemoveList.sort();
       for (var i = iRemoveList.length - 1; i >= 0 ; --i) {
-        if (iRemoveList[i] < gBoard.data.length) {
-          gBoard.data.splice(iRemoveList[i], 1);
+        if (iRemoveList[i] < gGameState.boardData.length) {
+          gGameState.boardData.splice(iRemoveList[i], 1);
         }
       }
-      for (var i = gBoard.data.length; i < gBoard.height; ++i) {
+      for (var i = gGameState.boardData.length; i < gBoard.height; ++i) {
         var newRow = new Int16Array(gBoard.width);
         for (var k = 0; k < newRow.length; ++k) {
           //newRow[k] = Math.floor(Math.random()*blockColor.length);
           newRow[k] = 0;
         }
-        gBoard.data.push(newRow);
+        gGameState.boardData.push(newRow);
       }
     }
 
@@ -225,10 +233,10 @@
       var wAnchorX = wBoardCorners[1][0] + wCenterX;
       var wAnchorY = wBoardCorners[1][1] + wCenterY - wBlockSize;
       var wBlockRadius = wBlockSize/5;
-      for( var i = 0; i < gBoard.data.length; ++i) {
-        for( var k = 0; k < gBoard.data[i].length; ++k) {
-          if (0 == gBoard.data[i][k]) continue;
-          wCtx.fillStyle = blockColor[gBoard.data[i][k]];
+      for( var i = 0; i < gGameState.boardData.length; ++i) {
+        for( var k = 0; k < gGameState.boardData[i].length; ++k) {
+          if (0 == gGameState.boardData[i][k]) continue;
+          wCtx.fillStyle = blockColor[gGameState.boardData[i][k]];
           wCtx.beginPath();
           wCtx.roundRect(wAnchorX + k*wBlockSize, wAnchorY - i*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
           wCtx.fill();
@@ -237,9 +245,9 @@
       }
 
       wCtx.fillStyle = ghostBlockColor;
-      for( var i = 0; i < gActiveBlock.blockShape.length; ++i) {
-        var x = gActiveBlock.blockShape[i][0] + gActiveBlock.ghostBlockCenter[0];
-        var y = gActiveBlock.blockShape[i][1] + gActiveBlock.ghostBlockCenter[1];
+      for( var i = 0; i < gGameState.activeBlock.blockShape.length; ++i) {
+        var x = gGameState.activeBlock.blockShape[i][0] + gGameState.activeBlock.ghostBlockCenter[0];
+        var y = gGameState.activeBlock.blockShape[i][1] + gGameState.activeBlock.ghostBlockCenter[1];
         
         wCtx.beginPath();
         wCtx.roundRect(wAnchorX + x*wBlockSize, wAnchorY - y*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
@@ -248,10 +256,10 @@
 
       }
       
-      wCtx.fillStyle = blockColor[gActiveBlock.blockIndex];
-      for( var i = 0; i < gActiveBlock.blockShape.length; ++i) {
-        var x = gActiveBlock.blockShape[i][0] + gActiveBlock.blockCenter[0];
-        var y = gActiveBlock.blockShape[i][1] + gActiveBlock.blockCenter[1];
+      wCtx.fillStyle = blockColor[gGameState.activeBlock.blockIndex];
+      for( var i = 0; i < gGameState.activeBlock.blockShape.length; ++i) {
+        var x = gGameState.activeBlock.blockShape[i][0] + gGameState.activeBlock.blockCenter[0];
+        var y = gGameState.activeBlock.blockShape[i][1] + gGameState.activeBlock.blockCenter[1];
         
         wCtx.beginPath();
         wCtx.roundRect(wAnchorX + x*wBlockSize, wAnchorY - y*wBlockSize, wBlockSize, wBlockSize, wBlockRadius);
@@ -281,14 +289,14 @@
         for(var j = 0; j < wYArr.length; ++j) {
           var y = iShape[i][1] + wYArr[j];
           if ( y < 0 ) return false;
-          if ( y >= gBoard.data.length ) return false;
+          if ( y >= gGameState.boardData.length ) return false;
 
           for(var k = 0; k < wXArr.length; ++k) {
             var x = iShape[i][0] + wXArr[k];        
             if ( x < 0 ) return false;
-            if ( x >= gBoard.data[y].length ) return false;
+            if ( x >= gGameState.boardData[y].length ) return false;
 
-            if (0 != gBoard.data[y][x]) return false;
+            if (0 != gGameState.boardData[y][x]) return false;
           }
         }
       }
@@ -297,45 +305,47 @@
     }
 
     function moveX(iDx) {
-      var sign = iDx/Math.abs(iDx);
+      if (0.00003 > Math.abs(iDx)) return;
+      var sign = Math.sign(iDx);
       var mag = Math.abs(iDx);
       for( var i = mag; i >= 0; --i ) {
-        var newCenter = [gActiveBlock.blockCenter[0] + sign*i, gActiveBlock.blockCenter[1]];
+        var newCenter = [gGameState.activeBlock.blockCenter[0] + sign*i, gGameState.activeBlock.blockCenter[1]];
         if (newCenter[0] < 0) newCenter[0] = 0;
         if (newCenter[0] >= gBoard.width) newCenter[0] = gBoard.width;
         if (newCenter[1] < 0) newCenter[1] = 0;
         if (newCenter[0] >= gBoard.height) newCenter[1] = gBoard.height;
 
-        if (true == testPosition(newCenter, gActiveBlock.blockShape)) {
-          gActiveBlock.blockCenter = newCenter;
+        if (true == testPosition(newCenter, gGameState.activeBlock.blockShape)) {
+          gGameState.activeBlock.blockCenter = newCenter;
         }
       }
     }
     
     function moveY(iDy) {
-      var sign = iDy/Math.abs(iDy);
+      if (0.00003 > Math.abs(iDy)) return;
+      var sign = Math.sign(iDy);
       var mag = Math.abs(iDy);
       for( var i = mag; i >= 0; --i ) {
-        var newCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1] + sign*i];
+        var newCenter = [gGameState.activeBlock.blockCenter[0], gGameState.activeBlock.blockCenter[1] + sign*i];
         if (newCenter[0] < 0) newCenter[0] = 0;
         if (newCenter[0] >= gBoard.width) newCenter[0] = gBoard.width;
         if (newCenter[1] < 0) newCenter[1] = 0;
         if (newCenter[0] >= gBoard.height) newCenter[1] = gBoard.height;
 
-        if (true == testPosition(newCenter, gActiveBlock.blockShape)) {
-          gActiveBlock.blockCenter = newCenter;
+        if (true == testPosition(newCenter, gGameState.activeBlock.blockShape)) {
+          gGameState.activeBlock.blockCenter = newCenter;
         }
       }
     }
     
     function rotate(iRotation) {
-      var wShape = rotateArray(iRotation, gActiveBlock.blockShape);
+      var wShape = rotateArray(iRotation, gGameState.activeBlock.blockShape);
       var testOrder = [0, -1, 1];
       for (var i = 0; i < testOrder.length; ++i) {
-        var newCenter = [gActiveBlock.blockCenter[0] + testOrder[i], gActiveBlock.blockCenter[1]];
+        var newCenter = [gGameState.activeBlock.blockCenter[0] + testOrder[i], gGameState.activeBlock.blockCenter[1]];
         if (true == testPosition(newCenter, wShape)) {
-          gActiveBlock.blockShape = wShape;
-          gActiveBlock.blockCenter = newCenter;
+          gGameState.activeBlock.blockShape = wShape;
+          gGameState.activeBlock.blockCenter = newCenter;
           break;
         }
       }
@@ -379,11 +389,11 @@
           var dy = (touchObj.y - touchPoints[k].y)/gBoard.blockSize;
           var update = false;
           if (1 < Math.abs(dx)) {
-            gGameState.inputQueue.push(["moveX", Math.sign(dx)]);
+            gGameState.inputQueue.push(["moveX", Math.floor(dx)]);
             update = true;
           }
           else if (1 < dy) {
-            gGameState.inputQueue.push(["moveY", -Math.sign(1)]);
+            gGameState.inputQueue.push(["moveY", -Math.floor(dy)]);
             update = true;
           }
 
@@ -403,7 +413,7 @@
           var dx = (touchObj.x - touchPoints[k].x0)/gBoard.blockSize;
           var dy = (touchObj.y - touchPoints[k].y0)/gBoard.blockSize;
 
-          if(100 > Date.now() - touchPoints[k].t0) {
+          if(250 > Date.now() - touchPoints[k].t0) {
             if (1 > Math.abs(dx) && 1 > Math.abs(dy)) {
               gGameState.inputQueue.push(["rotate", 1]);
             }
@@ -427,21 +437,44 @@
     function gameLoop(iDt) {
       
       if ( 3 >= gGameState.upcomingBlock.length) {
-        //gGameState.upcomingBlock.push(7);
-        gGameState.upcomingBlock.push(Math.floor(Math.random()*7 + 1));
+        var wProb = [];
+        wProb.push(0);
+        for( var i = 1; i < 8; ++i) {
+          wProb.push(10);
+        }
+
+        for (var i = gGameState.pastBlocks.length - 1; i >= 0 && i > gGameState.pastBlocks.length - 20; --i) {
+          --wProb[gGameState.pastBlocks[i]];
+        }
+
+        //debugLog(wProb);
+        var wAccumulator = 0;
+        for( var i = 1; i < 8; ++i) {
+          wAccumulator += wProb[i];
+          wProb[i] = wAccumulator;
+        }
+
+        var wRand = Math.floor(Math.random()*wAccumulator);
+
+        for( var i = 1; i < 8; ++i) {
+          if( wRand < wProb[i]) {
+            gGameState.upcomingBlock.push(i);
+            break;
+          }
+        }
       }
 
-      if (0 == gActiveBlock.blockIndex) {
-        gActiveBlock.blockIndex = gGameState.upcomingBlock[0];
+      if (0 == gGameState.activeBlock.blockIndex) {
+        gGameState.activeBlock.blockIndex = gGameState.upcomingBlock[0];
         gGameState.upcomingBlock.shift();
-        gActiveBlock.blockShape = rotateArray(identity, blockShape[gActiveBlock.blockIndex]);
-        gActiveBlock.lastBlockCenter = [-100, -100];
+        gGameState.activeBlock.blockShape = rotateArray(identity, blockShape[gGameState.activeBlock.blockIndex]);
+        gGameState.activeBlock.lastBlockCenter = [-100, -100];
 
         var centerSet = false;
-        gActiveBlock.blockCenter = [Math.floor(gBoard.width/2), gBoard.height];
+        gGameState.activeBlock.blockCenter = [Math.floor(gBoard.width/2), gBoard.height];
         for(var i = 0; i < 5 ; ++i) {
-          --gActiveBlock.blockCenter[1];
-          if (true == testPosition(gActiveBlock.blockCenter, gActiveBlock.blockShape ) ) {
+          --gGameState.activeBlock.blockCenter[1];
+          if (true == testPosition(gGameState.activeBlock.blockCenter, gGameState.activeBlock.blockShape ) ) {
             centerSet = true;
             break;
           }
@@ -460,31 +493,31 @@
         else if ("moveY" == gGameState.inputQueue[0][0]) {
           moveY(gGameState.inputQueue[0][1]);
         }
-        if ("rotate" == gGameState.inputQueue[0][0]) {
+        else if ("rotate" == gGameState.inputQueue[0][0]) {
           rotate(rotateRight);
         }
-
+        //debugLog( gGameState.inputQueue  );
         gGameState.inputQueue = [];
       }
 
-      var wNewGhostCenter = [Math.floor( gActiveBlock.blockCenter[0]), Math.floor(gActiveBlock.blockCenter[1])];
+      var wNewGhostCenter = [Math.floor( gGameState.activeBlock.blockCenter[0]), Math.floor(gGameState.activeBlock.blockCenter[1])];
       do {
         --wNewGhostCenter[1];
-      }while(true == testPosition( wNewGhostCenter , gActiveBlock.blockShape))
+      }while(true == testPosition( wNewGhostCenter , gGameState.activeBlock.blockShape))
       ++wNewGhostCenter[1];
-      gActiveBlock.ghostBlockCenter = wNewGhostCenter;
+      gGameState.activeBlock.ghostBlockCenter = wNewGhostCenter;
         
-      var dGhostCenter = [ Math.floor(gActiveBlock.blockCenter[0]) - gActiveBlock.ghostBlockCenter[0], Math.floor(gActiveBlock.blockCenter[1]) - gActiveBlock.ghostBlockCenter[1]];
+      var dGhostCenter = [ Math.floor(gGameState.activeBlock.blockCenter[0]) - gGameState.activeBlock.ghostBlockCenter[0], Math.floor(gGameState.activeBlock.blockCenter[1]) - gGameState.activeBlock.ghostBlockCenter[1]];
       if ( 0.2 > Math.abs(dGhostCenter[0]) &&  0.01 > Math.abs(dGhostCenter[1])) {
         gGameState.remainingSlackTime -= iDt*1000;
         if (0 > gGameState.remainingSlackTime) {
 
-          paintBoard(gActiveBlock, gBoard.data);
+          paintBoard(gGameState.activeBlock, gGameState.boardData);
           wRowsToRemove = [];
-          for( var i = 0; i < gBoard.data.length; ++i) {
+          for( var i = 0; i < gGameState.boardData.length; ++i) {
             var removeThisRow = true;
-            for( var k = 0; k < gBoard.data[i].length; ++k) {
-              if (0 == gBoard.data[i][k]) {
+            for( var k = 0; k < gGameState.boardData[i].length; ++k) {
+              if (0 == gGameState.boardData[i][k]) {
                 removeThisRow = false;
                 break;
               }
@@ -499,23 +532,27 @@
             gGameState.score += scorePoints[wRowsToRemove.length];
           }
           ++gGameState.moves;
-          gActiveBlock.blockIndex = 0;
+          gGameState.decendRate += gGameState.decendRateIncrease;
+          gGameState.pastBlocks.push(gGameState.activeBlock.blockIndex);
+          gGameState.activeBlock.blockIndex = 0;
           return true;
         }
       }
 
       moveY(-gGameState.decendRate*iDt);
 
-      if(0.01 < Math.abs(gActiveBlock.blockCenter[1] - gActiveBlock.lastBlockCenter[1])){
+      if(0.01 < Math.abs(gGameState.activeBlock.blockCenter[1] - gGameState.activeBlock.lastBlockCenter[1])){
         gGameState.remainingSlackTime = gGameState.slackTime;
       }
-      gActiveBlock.lastBlockCenter = [gActiveBlock.blockCenter[0], gActiveBlock.blockCenter[1]];
+      gGameState.activeBlock.lastBlockCenter = [gGameState.activeBlock.blockCenter[0], gGameState.activeBlock.blockCenter[1]];
 
       return true;
     }
 
+    var gGameState = null;
     function entryPoint() {
 
+      if (null == gGameState) gGameState = newGameState(gBoard.width, gBoard.height);
       var wNow = Date.now();
       var wDt = (wNow - gGameState.lastIterationTime)/1000;
       gGameState.lastIterationTime = wNow;
@@ -528,11 +565,7 @@
 
       if (wIsGameOver) {
         alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
-        createBoard();
-        gGameState.score = 0;
-        gGameState.moves = 0;
-        gGameState.inputQueue = [];
-        gActiveBlock.blockIndex = 0;
+        gGameState = null
       }
       window.requestAnimationFrame(entryPoint); // call next frame
     }
@@ -545,10 +578,9 @@
 
       //change the size of the Canvas to match screen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
       var wCanvas = document.getElementById(gGlobal.viewportId);
-      wCanvas.parentElement.height = wCanvas.parentElement.offsetTop + wCanvas.offsetHeight;
-      wCanvas.parentElement.width = window.innerWidth;
-
-      if (null != wCanvas) {
+      if (null != wCanvas){
+        wCanvas.parentElement.height = wCanvas.parentElement.offsetTop + wCanvas.offsetHeight;
+        wCanvas.parentElement.width = window.innerWidth;
         wCanvas.height = wCanvas.parentElement.height;
         wCanvas.width = wCanvas.parentElement.width;
       }
@@ -556,7 +588,6 @@
 
     function init() {
       resize();
-      createBoard();
       window.requestAnimationFrame(entryPoint);
     }
     
@@ -603,6 +634,7 @@
         y : event.clientY,
       })
     });
+    
     document.addEventListener("touchstart", function( event ){
       for (var i = 0; i < event.changedTouches.length ; ++i) {
         var touchObj = event.changedTouches[i];
@@ -613,6 +645,7 @@
           y : touchObj.clientY,
         })
       }
+      event.preventDefault();
     });
     
     document.addEventListener("touchmove", function( event ){
@@ -624,6 +657,7 @@
           y : touchObj.clientY,
         });
       }
+      event.preventDefault();
     });
 
     document.addEventListener("touchend", function( event ){
@@ -635,6 +669,7 @@
           y : touchObj.clientY,
         })
       }
+      event.preventDefault();
     });
 
   </script>
