@@ -211,18 +211,18 @@
       var wBoardHeight = gBoard.height*wBlockSize;
 
       var wBoardCorners = [
-        [gBoard.x - wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
-        [gBoard.x - wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
-        [gBoard.x + wBoardWidth/2, gBoard.y + wBoardHeight/2 ],
-        [gBoard.x + wBoardWidth/2, gBoard.y - wBoardHeight/2 ],
+        [gBoard.x - wBoardWidth/2 + wCenterX, gBoard.y - wBoardHeight/2 + wCenterY],
+        [gBoard.x - wBoardWidth/2 + wCenterX, gBoard.y + wBoardHeight/2 + wCenterY],
+        [gBoard.x + wBoardWidth/2 + wCenterX, gBoard.y + wBoardHeight/2 + wCenterY],
+        [gBoard.x + wBoardWidth/2 + wCenterX, gBoard.y - wBoardHeight/2 + wCenterY],
       ];
 
       wCtx.fillStyle = gBoard.backgroundColor;
-      wCtx.fillRect(wBoardCorners[0][0] + wCenterX, wBoardCorners[0][1] + wCenterY, wBoardWidth, wBoardHeight);
-      wCtx.moveTo( wBoardCorners[0][0] + wCenterX, wBoardCorners[0][1] + wCenterY);
+      wCtx.fillRect(wBoardCorners[0][0], wBoardCorners[0][1], wBoardWidth, wBoardHeight);
+      wCtx.moveTo( wBoardCorners[0][0], wBoardCorners[0][1]);
 
       for( var i = 1; i < wBoardCorners.length; ++i) {
-        wCtx.lineTo(wBoardCorners[i][0] + wCenterX, wBoardCorners[i][1] + wCenterY);
+        wCtx.lineTo(wBoardCorners[i][0], wBoardCorners[i][1]);
       }
       wCtx.strokeStyle = gBoard.borderColor;
       wCtx.lineWidth = 3;
@@ -230,8 +230,8 @@
       
       wCtx.strokeStyle = "dark grey";
       wCtx.lineWidth = 2;
-      var wAnchorX = wBoardCorners[1][0] + wCenterX;
-      var wAnchorY = wBoardCorners[1][1] + wCenterY - wBlockSize;
+      var wAnchorX = wBoardCorners[1][0];
+      var wAnchorY = wBoardCorners[1][1] - wBlockSize;
       var wBlockRadius = wBlockSize/5;
       for( var i = 0; i < gGameState.boardData.length; ++i) {
         for( var k = 0; k < gGameState.boardData[i].length; ++k) {
@@ -271,7 +271,7 @@
       wCtx.fillStyle = "white";
       wCtx.strokeStyle = "dark-grey";
       wCtx.lineWidth = 5;
-      wCtx.font = "22px bold Comic Sans MS";
+      wCtx.font = 0.75*wBlockSize + "px bold Comic Sans MS";
       wCtx.textAlign = "right";
       wCtx.strokeText("Score : " + gGameState.score, wAnchorX + wBoardWidth , wAnchorY - wBoardHeight);
       wCtx.fillText("Score : " + gGameState.score, wAnchorX + wBoardWidth , wAnchorY - wBoardHeight);
