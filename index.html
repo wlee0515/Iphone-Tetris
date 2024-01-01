@@ -389,17 +389,17 @@
           var dy = (touchObj.y - touchPoints[k].y)/gBoard.blockSize;
           var update = false;
           if (1 < Math.abs(dx)) {
-            gGameState.inputQueue.push(["moveX", Math.floor(dx)]);
+            gGameState.inputQueue.push(["moveX", parseInt(dx)]);
             update = true;
           }
           else if (1 < dy) {
-            gGameState.inputQueue.push(["moveY", -Math.floor(dy)]);
+            gGameState.inputQueue.push(["moveY", -parseInt(dy)]);
             update = true;
           }
 
           if (true == update) {
-            touchPoints[k].x = touchObj.x - (dx - Math.floor(dx))*gBoard.blockSize;
-            touchPoints[k].y = touchObj.y - (dy - Math.floor(dy))*gBoard.blockSize;
+            touchPoints[k].x = touchObj.x - (dx - parseInt(dx))*gBoard.blockSize;
+            touchPoints[k].y = touchObj.y - (dy - parseInt(dy))*gBoard.blockSize;
           }
           break;
         }
@@ -507,8 +507,8 @@
       ++wNewGhostCenter[1];
       gGameState.activeBlock.ghostBlockCenter = wNewGhostCenter;
         
-      var dGhostCenter = [ Math.floor(gGameState.activeBlock.blockCenter[0]) - gGameState.activeBlock.ghostBlockCenter[0], Math.floor(gGameState.activeBlock.blockCenter[1]) - gGameState.activeBlock.ghostBlockCenter[1]];
-      if ( 0.2 > Math.abs(dGhostCenter[0]) &&  0.01 > Math.abs(dGhostCenter[1])) {
+      var dGhostCenter = [ gGameState.activeBlock.blockCenter[0] - gGameState.activeBlock.ghostBlockCenter[0], gGameState.activeBlock.blockCenter[1] - gGameState.activeBlock.ghostBlockCenter[1]];
+      if ( 0.001 > Math.abs(dGhostCenter[0]) &&  0.01 > Math.abs(dGhostCenter[1])) {
         gGameState.remainingSlackTime -= iDt*1000;
         if (0 > gGameState.remainingSlackTime) {
 
@@ -539,7 +539,12 @@
         }
       }
 
-      moveY(-gGameState.decendRate*iDt);
+      var wDecent = -gGameState.decendRate*iDt;
+      if ( gGameState.activeBlock.blockCenter[1] + wDecent <  gGameState.activeBlock.ghostBlockCenter[1]) {
+        wDecent = gGameState.activeBlock.ghostBlockCenter[1] - gGameState.activeBlock.blockCenter[1];
+      }
+
+      moveY(wDecent);
 
       if(0.01 < Math.abs(gGameState.activeBlock.blockCenter[1] - gGameState.activeBlock.lastBlockCenter[1])){
         gGameState.remainingSlackTime = gGameState.slackTime;
