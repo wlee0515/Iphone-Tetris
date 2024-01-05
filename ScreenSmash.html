@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<head>
+  <!--
+    https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html
+  -->
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!--
+    Sets whether a web application runs in full-screen mode.
+
+    If content is set to yes, the web application runs in full-screen mode; otherwise, it does not. The default behavior is to use Safari to display web content.
+    You can determine whether a webpage is displayed in full-screen mode using the window.navigator.standalone read-only Boolean JavaScript property.
+  -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!--
+    Sets the style of the status bar for a web application.
+
+    This meta tag has no effect unless you first specify full-screen mode as described in apple-apple-mobile-web-app-capable.
+    If content is set to default, the status bar appears normal.
+    If set to black, the status bar has a black background.
+    If set to black-translucent, the status bar is black and translucent.
+    If set to default or black, the web content is displayed below the status bar.
+    If set to black-translucent, the web content is displayed on the entire screen, partially obscured by the status bar.
+    The default value is default.
+  -->
+  <link rel="apple-touch-icon" href="favicon.ico" />
+
+  <!-- startup image needs to be defined for each iphone resolution, determineable by media query-->
+  <!--
+  <link rel="apple-touch-startup-image" href="startup.png" />
+
+  -->
+  <title>Screen Smash</title>
+
+  <style>
+    body {
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+
+      background-image: url("startup.png"); 
+      background-position: center;  
+      background-repeat: no-repeat; 
+      background-size: cover; 
+      background-color: black; /*this is the color of the navbar*/
+ 
+      /* disable selection to prevent selecting the view port*/
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+
+      text-align: center;
+
+    }
+
+    #debug_div {
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    #viewport_div {
+      /* Make this default to 100%, will scale on resize*/
+      overflow: hidden;
+      /* fix position to the bottom to account for the dynamically changing bottom nav bar in safari*/
+      position: fixed; 
+      bottom: 0;
+    }
+
+    #viewport {
+    }
+
+  </style>
+  <script>
+
+    var gGlobal = {
+      viewportId : "viewport",
+      debugId : "debug_div",
+    };
+
+    function debugLog(iString) {
+      var wDebugDiv = document.getElementById(gGlobal.debugId);
+      wDebugDiv.innerHTML += "<span>" + iString + "</span></br>";
+    }
+    
+    function newGameState() {
+
+      return {
+        dropDist : 50,
+        inputQueue : [],        
+      }
+    }
+
+    function createInput(iMessage, iX, iY) {
+      return {
+        text : iMessage,
+        x : iX,
+        y : iY
+      };
+    }
+
+    function render(iDt) {
+      var wCanvas = document.getElementById(gGlobal.viewportId);
+      var wCtx = wCanvas.getContext("2d");
+      
+      if (null == wCtx) return;
+
+      //wCtx.clearRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight );
+            
+     // wCtx.fillStyle = "rgba(0,0,0," + 0.001*iDt + ")";
+     // wCtx.fillRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight);
+
+      for ( var i = 0; i < gGameState.inputQueue.length; ++i) {
+
+        wCtx.textAlign = "center";
+        wCtx.verticalAlign = "middle";
+        wCtx.fillStyle = "white";
+        wCtx.strokeStyle = "dark-grey";
+        wCtx.lineWidth = 5;
+        wCtx.font = 0.75*50 + "px bold Comic Sans MS";
+        wCtx.strokeText( gGameState.inputQueue[i].text, gGameState.inputQueue[i].x , gGameState.inputQueue[i].y);
+        wCtx.fillText(gGameState.inputQueue[i].text, gGameState.inputQueue[i].x , gGameState.inputQueue[i].y);    
+      }
+
+      gGameState.inputQueue = [];
+      
+    }
+
+    var touchPoints = [];
+    function processTouchStart(touchObj) {
+      
+      var existingObj = null;
+      for (var k = 0; k < touchPoints.length ; ++k) {
+        if (touchPoints[k].id == touchObj.identifier) {
+          existingObj = touchPoints[k];
+          break;
+        }
+      }
+      if (null != existingObj) {
+        existingObj.id = touchObj.id;
+        existingObj.x = touchObj.x;
+        existingObj.y = touchObj.y;
+        existingObj.x0 = touchObj.x;
+        existingObj.y0 = touchObj.y;
+        existingObj.t0 = Date.now();
+      }
+      else {
+        touchPoints.push({
+          id : touchObj.id,
+          x : touchObj.x,
+          y : touchObj.y,
+          x0 : touchObj.x,
+          y0 : touchObj.y,
+          t0 : Date.now()
+        });
+      }
+
+      gGameState.inputQueue.push(createInput("Abba", touchObj.x, touchObj.y));
+    }
+
+    function processTouchMove(touchObj) {
+      for (var k = 0; k < touchPoints.length ; ++k) {
+        if (touchPoints[k].id == touchObj.id) {
+
+          var dx = (touchObj.x - touchPoints[k].x)/gGameState.dropDist;
+          var dy = (touchObj.y - touchPoints[k].y)/gGameState.dropDist;
+          var update = false;
+          if (1 < dx*dx + dy*dy) {
+            gGameState.inputQueue.push(createInput("Abba", touchObj.x, touchObj.y));
+            touchPoints[k].x = touchObj.x - (dx - parseInt(dx))*gGameState.dropDist;
+            touchPoints[k].y = touchObj.y - (dy - parseInt(dy))*gGameState.dropDist;
+          }
+          break;
+        }
+      }
+    }
+    
+    function processTouchEnd(touchObj) {
+      for (var k = touchPoints.length - 1; k >= 0 ; --k) {
+        if (touchPoints[k].id == touchObj.id) {
+
+          touchPoints.splice(k, 1);
+          break;
+        }
+      }
+    }
+
+    function gameLoop(iDt) {
+      
+      return true;
+    }
+
+    var gGameState = null;
+    function entryPoint() {
+
+      if (null == gGameState) gGameState = newGameState();
+      var wNow = Date.now();
+      var wDt = (wNow - gGameState.lastIterationTime)/1000;
+      gGameState.lastIterationTime = wNow;
+      if (0.025 < wDt) wDt = 0.025; // limit elapseTime
+
+      var wIsGameOver = ! gameLoop(wDt);
+
+      //resize(); // update window size
+      render(wDt); // render Image
+
+      if (wIsGameOver) {
+        alert("GAME OVER \nMoves : " + gGameState.moves + "\nScore : " + gGameState.score);
+        gGameState = null
+      }
+      window.requestAnimationFrame(entryPoint); // call next frame
+    }
+
+
+    function resize() {
+      
+      document.body.height = window.innerHeight;
+      document.body.width = window.innerWidth;
+
+      //change the size of the Canvas to match screen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
+      var wCanvas = document.getElementById(gGlobal.viewportId);
+      if (null != wCanvas){
+        wCanvas.parentElement.height = wCanvas.parentElement.offsetTop + wCanvas.offsetHeight;
+        wCanvas.parentElement.width = window.innerWidth;
+        wCanvas.height = wCanvas.parentElement.height;
+        wCanvas.width = wCanvas.parentElement.width;
+      }
+    }
+
+    function init() {
+      resize();
+      window.requestAnimationFrame(entryPoint);
+    }
+    
+
+    window.addEventListener("load", init);
+    window.addEventListener("resize", resize);
+    document.addEventListener('keydown', function(event) {
+      
+    });
+    
+    document.addEventListener("mousedown", function( event ){
+      processTouchStart ({
+        id : -1,
+        x : event.clientX,
+        y : event.clientY,
+      })
+    });
+    document.addEventListener("mousemove", function( event ){
+      processTouchMove ({
+        id : -1,
+        x : event.clientX,
+        y : event.clientY,
+      })
+    });
+    document.addEventListener("mouseup", function( event ){
+      processTouchEnd ({
+        id : -1,
+        x : event.clientX,
+        y : event.clientY,
+      })
+    });
+    
+    document.addEventListener("touchstart", function( event ){
+      for (var i = 0; i < event.changedTouches.length ; ++i) {
+        var touchObj = event.changedTouches[i];
+
+        processTouchStart ({
+          id : touchObj.identifier,
+          x : touchObj.clientX,
+          y : touchObj.clientY,
+        })
+      }
+      event.preventDefault();
+    });
+    
+    document.addEventListener("touchmove", function( event ){
+      for (var i = 0; i < event.changedTouches.length ; ++i) {
+        var touchObj = event.changedTouches[i];
+        processTouchMove({
+          id : touchObj.identifier,
+          x : touchObj.clientX,
+          y : touchObj.clientY,
+        });
+      }
+      event.preventDefault();
+    });
+
+    document.addEventListener("touchend", function( event ){
+      for (var i = 0; i < event.changedTouches.length ; ++i) {
+        var touchObj = event.changedTouches[i];
+        processTouchEnd({
+          id : touchObj.identifier,
+          x : touchObj.clientX,
+          y : touchObj.clientY,
+        })
+      }
+      event.preventDefault();
+    });
+
+  </script>
+</head>
+<body>
+  <div id="viewport_div">
+    <canvas id="viewport"></canvas>
+  </div>
+  <div id="debug_div"></div>
+</body>
+</html>
