@@ -112,20 +112,24 @@
       if (null == wCtx) return;
 
       //wCtx.clearRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight );
-            
-     // wCtx.fillStyle = "rgba(0,0,0," + 0.001*iDt + ")";
-     // wCtx.fillRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight);
+      wCtx.save();
+      wCtx.globalAlpha = 1;
+      wCtx.globalCompositeOperation = "destination-in";
+      const fadeOutAmount = 0.5;
+      wCtx.fillStyle = "rgba(0, 0, 0, " + (1.0 - fadeOutAmount * iDt) + ")";
+      wCtx.fillRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight);
+      wCtx.restore();
 
       for ( var i = 0; i < gGameState.inputQueue.length; ++i) {
-
+        
         wCtx.textAlign = "center";
         wCtx.verticalAlign = "middle";
         wCtx.fillStyle = "white";
         wCtx.strokeStyle = "dark-grey";
         wCtx.lineWidth = 5;
-        wCtx.font = 0.75*50 + "px bold Comic Sans MS";
-        wCtx.strokeText( gGameState.inputQueue[i].text, gGameState.inputQueue[i].x , gGameState.inputQueue[i].y);
-        wCtx.fillText(gGameState.inputQueue[i].text, gGameState.inputQueue[i].x , gGameState.inputQueue[i].y);    
+        wCtx.font = (0.1 + Math.random())*window.innerWidth  + "px bold Comic Sans MS";
+        wCtx.strokeText( gGameState.inputQueue[i].text, gGameState.inputQueue[i].x*window.innerWidth , gGameState.inputQueue[i].y*window.innerHeight);
+        wCtx.fillText(gGameState.inputQueue[i].text, gGameState.inputQueue[i].x*window.innerWidth , gGameState.inputQueue[i].y*window.innerHeight);    
       }
 
       gGameState.inputQueue = [];
@@ -161,7 +165,7 @@
         });
       }
 
-      gGameState.inputQueue.push(createInput("Abba", touchObj.x, touchObj.y));
+      gGameState.inputQueue.push(createInput("Abba", touchObj.x/window.innerWidth, touchObj.y/window.innerHeight));
     }
 
     function processTouchMove(touchObj) {
@@ -172,7 +176,7 @@
           var dy = (touchObj.y - touchPoints[k].y)/gGameState.dropDist;
           var update = false;
           if (1 < dx*dx + dy*dy) {
-            gGameState.inputQueue.push(createInput("Abba", touchObj.x, touchObj.y));
+            gGameState.inputQueue.push(createInput("Abba", touchObj.x/window.innerWidth, touchObj.y/window.innerHeight));
             touchPoints[k].x = touchObj.x - (dx - parseInt(dx))*gGameState.dropDist;
             touchPoints[k].y = touchObj.y - (dy - parseInt(dy))*gGameState.dropDist;
           }
@@ -207,7 +211,7 @@
 
       var wIsGameOver = ! gameLoop(wDt);
 
-      //resize(); // update window size
+      resize(); // update window size
       render(wDt); // render Image
 
       if (wIsGameOver) {
@@ -226,10 +230,13 @@
       //change the size of the Canvas to match screen size. Canvas Parent height = top of window - bottom of Parent Element bottom because Parent Element Bottom is fixed to top of the bottom navBar 
       var wCanvas = document.getElementById(gGlobal.viewportId);
       if (null != wCanvas){
-        wCanvas.parentElement.height = wCanvas.parentElement.offsetTop + wCanvas.offsetHeight;
-        wCanvas.parentElement.width = window.innerWidth;
-        wCanvas.height = wCanvas.parentElement.height;
-        wCanvas.width = wCanvas.parentElement.width;
+        var desireHeight = wCanvas.parentElement.offsetTop + wCanvas.offsetHeight;
+        var desireWidth = window.innerWidth;
+        if (wCanvas.parentElement.height != desireHeight) wCanvas.parentElement.height = desireHeight;
+        if (wCanvas.parentElement.width != desireWidth) wCanvas.parentElement.width = desireWidth;
+
+        if (wCanvas.height != desireHeight) wCanvas.height = desireHeight;
+        if (wCanvas.width != desireWidth) wCanvas.width = desireWidth;
       }
     }
 
@@ -243,6 +250,7 @@
     window.addEventListener("resize", resize);
     document.addEventListener('keydown', function(event) {
       
+      gGameState.inputQueue.push(createInput(String.fromCharCode(event.keyCode), Math.random(), Math.random()));
     });
     
     document.addEventListener("mousedown", function( event ){
