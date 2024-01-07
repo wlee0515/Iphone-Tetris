@@ -111,29 +111,33 @@
     }
 
     function createInput(iMessage, iX, iY) {
+
+      var baseSize = window.innerWidth < window.innerHeight ? window.innerWidth : window.innerHeight;
       return {
         text : iMessage,
         x : iX,
-        y : iY
+        y : iY,
+        dt : 0.0,
+        alpha : 1.0,
+        fileStyle_r : Math.random()*255,
+        fileStyle_g : Math.random()*255,
+        fileStyle_b : Math.random()*255,
+        strokeStyle_r : Math.random()*255,
+        strokeStyle_g : Math.random()*255,
+        strokeStyle_b : Math.random()*255,
+        lineWidth : Math.random()*50,
+        font : Math.round((0.1 + 0.9*Math.random())*baseSize)  + "px " + gGlobal.fontList[Math.floor(Math.random()*gGlobal.fontList.length)],
       };
     }
 
     function createInput_RandPosition(iMessage) {
-      return {
-        text : iMessage,
-        x : Math.random(),
-        y : Math.random()
-      };
+      return createInput(iMessage, Math.random(), Math.random());
     }
     
     function createInput_RandText(iX, iY) {
       var char = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       var selected = char[Math.floor(Math.random()*char.length)];
-      return {
-        text : selected,
-        x : iX,
-        y : iY
-      };
+      return createInput(selected, iX, iY);
     }
 
     function render(iDt) {
@@ -142,8 +146,8 @@
       
       if (null == wCtx) return;
 
-      //wCtx.clearRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight );
-      
+      wCtx.clearRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight );
+      /*
       wCtx.save();
       wCtx.globalAlpha = 1;
       wCtx.globalCompositeOperation = "destination-in";
@@ -152,23 +156,18 @@
       wCtx.fillRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight);
       //wCtx.clearRect(0, 0, wCanvas.clientWidth, wCanvas.clientHeight );
       wCtx.restore();
-      
-
+      */
       for ( var i = 0; i < gGameState.inputQueue.length; ++i) {
-        
-        var baseSize = window.innerWidth < window.innerHeight ? window.innerWidth : window.innerHeight;
+        var it = gGameState.inputQueue[i];
         wCtx.textAlign = "center";
         wCtx.textBaseline = "middle";
-        wCtx.fillStyle = "rgb(" + Math.random()*255 +  "," + Math.random()*255 +  "," + Math.random()*255 + ")";
-        wCtx.strokeStyle = "rgb(" + Math.random()*255 +  "," + Math.random()*255 +  "," + Math.random()*255 + ")";
-        wCtx.lineWidth = Math.random()*50;
-        wCtx.font = Math.round((0.1 + 0.9*Math.random())*baseSize)  + "px " + gGlobal.fontList[Math.floor(Math.random()*gGlobal.fontList.length)];
-        wCtx.strokeText( gGameState.inputQueue[i].text, gGameState.inputQueue[i].x*window.innerWidth , gGameState.inputQueue[i].y*window.innerHeight);
-        wCtx.fillText(gGameState.inputQueue[i].text, gGameState.inputQueue[i].x*window.innerWidth , gGameState.inputQueue[i].y*window.innerHeight);    
-      }
-
-      gGameState.inputQueue = [];
-      
+        wCtx.fillStyle = "rgba(" + it.fileStyle_r +  "," + it.fileStyle_g +  "," + it.fileStyle_b + "," + it.alpha + ")";
+        wCtx.strokeStyle = "rgba(" + it.strokeStyle_r +  "," + it.strokeStyle_g +  "," + it.strokeStyle_b + "," + it.alpha + ")";;
+        wCtx.lineWidth = it.lineWidth;
+        wCtx.font = it.font;
+        wCtx.strokeText( it.text, it.x*window.innerWidth , it.y*window.innerHeight);
+        wCtx.fillText(it.text, it.x*window.innerWidth , it.y*window.innerHeight);    
+      }      
     }
 
     var touchPoints = [];
@@ -232,6 +231,20 @@
 
     function gameLoop(iDt) {
       
+      var wRemoveList = [];
+      for ( var i = 0; i < gGameState.inputQueue.length; ++i) {
+        gGameState.inputQueue[i].dt += iDt;
+        if (5 < gGameState.inputQueue[i].dt) {
+          wRemoveList.push(i);
+        }
+        else {
+          gGameState.inputQueue[i].alpha = Math.min(1, 1 - (gGameState.inputQueue[i].dt - 0.5) *0.5);
+        }
+      }
+
+      for ( var i = wRemoveList.length - 1; i >= 0; --i) {
+        gGameState.inputQueue.splice(wRemoveList[i], 1);
+      }
       return true;
     }
 
