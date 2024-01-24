@@ -1,4 +1,4 @@
-import { WebAppBaseClass } from "https://wlee0515.github.io/WebAppDB/WebAppBaseClass.mjs"
+import { WebAppBaseClass } from "https://WebAppDB.github.io/v01/WebAppBaseClass.mjs"
 
 
 class ScreenSmash extends WebAppBaseClass {
