@@ -1,4 +1,4 @@
-import { WebAppBaseClass } from "https://WebAppDB.github.io/v01/WebAppBaseClass.mjs"
+import { WebAppBaseClass } from "https://webappdb.github.io/WebAppDBEngine/api/v01/WebAppBaseClass.mjs"
 
 
 class ScreenSmash extends WebAppBaseClass {
@@ -107,6 +107,7 @@ class ScreenSmash extends WebAppBaseClass {
   }
 
   gameLoop(iDt, iContainerDom) {
+    var temp = location;
     var wRemoveList = [];
     for ( var i = 0; i < this.data.gameState.inputQueue.length; ++i) {
       this.data.gameState.inputQueue[i].dt += iDt;
